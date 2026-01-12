@@ -21,13 +21,13 @@ begin
 end
 
 # ╔═╡ 24cc1c6a-f65b-411b-a8db-1c6291e4c92c
-sfreq = 20
+sfreq = 50
 
 # ╔═╡ ef0541ff-2b91-4e61-94ca-cead859d3ea9
 fo = @formula 0 ~ 1 + condition + continuous
 
 # ╔═╡ 701356ca-a25b-49fe-bd4e-650562963df7
-cross_val_reps = 2 # we have multithreading activated, but not sure how well it scales, choose wisely ;)
+cross_val_reps = 3 # we have multithreading activated, but not sure how well it scales, choose wisely ;)
 
 
 # ╔═╡ 604e1ee4-3b27-44de-b399-b46ca4195eaa
@@ -42,7 +42,7 @@ begin
 				:continuous => range(0, 5; length=10),
 			),
 			event_order_function = shuffle,
-		) |> d -> RepeatDesign(d,10)
+		) |> d -> RepeatDesign(d,20)
 
 
 
@@ -60,25 +60,46 @@ begin
 			
 	components = [n1, p3]
 
-	o = UnfoldSim.UniformOnsetFormula(
-		width_formula = @formula(0 ~ 1 + condition),
-		width_β = [50.0, 20.0] # longer width,less overlap for face condition
+
+
+	# uniform onset formula
+	#o = UniformOnset(; width = 50, offset = 0);
+	#o = UnfoldSim.UniformOnsetFormula(
+	#	width_formula = @formula(0 ~ 1 + condition),
+	#	width_β = [50.0, 20.0],# longer width,less overlap for face condition
 		# bias inter-onset intervals by condition to modify the overlap.
-	)
+	#)
+
+
+
+	# logNormalOnset
+	#log_n_o = LogNormalOnset(; μ = 3, σ = 0.25, offset = 0, truncate_upper = nothing);
+	
+	target_mean_ms = 250.0
+	target_mean_samples = target_mean_ms/1000 * sfreq
+	σ = 0.35
+	μ0 = log(target_mean_samples) - (σ^2)/2
+	
+	log_n_o = LogNormalOnsetFormula(
+		μ_formula = @formula(0 ~ 1 + condition + continuous),
+		μ_β = [μ0, 0.10, 0.05],      # [Intercept, condition(face), continuous]    
+    	σ_β = [σ],          
+    	offset_β = [0.0],
+		truncate_upper = nothing,
+		)
+
+
+			
 	events = generate_events(design)
-	onsets = UnfoldSim.simulate_interonset_distances(MersenneTwister(42), o, design)
-	noise = PinkNoise(; noiselevel=0.5)
-	dat, evts = simulate(rng, design, components, o, noise)
-	
-	
-	
-	
+	onsets = UnfoldSim.simulate_interonset_distances(MersenneTwister(42), log_n_o, design)
+	noise = PinkNoise(; noiselevel=0.1)
+	dat, evts = simulate(rng, design, components, log_n_o, noise)
 
 	
 	"""Bene's Simulation
 		"""
 	# sim continuous data, but only 1 channel
-	#dat, evts = UnfoldSim.predef_eeg(; noiselevel = 0.5,sfreq);
+	# dat, evts = UnfoldSim.predef_eeg(; noiselevel = 0.5,sfreq);
 	
 	
 	# cut it to epochs, date_e(ch x time x trial),[pre100ms,post500ms]
@@ -102,7 +123,7 @@ end
 begin
 	rng_isi = MersenneTwister(42)
 	events_isi = UnfoldSim.generate_events(deepcopy(rng_isi), design)
-	onsets_isi     = UnfoldSim.simulate_interonset_distances(deepcopy(rng_isi), o, design)
+	onsets_isi     = UnfoldSim.simulate_interonset_distances(deepcopy(rng_isi), log_n_o, design)
 	mask_car  = events_isi.condition .== "car"
     mask_face = events_isi.condition .== "face"
 	
@@ -183,8 +204,6 @@ end
 
 
 # ╔═╡ ce2b7a04-4511-4867-9446-7783606f8cb5
-# ╠═╡ disabled = true
-#=╠═╡
 """dat_e :: Array{Float63, 3}
 size(date_e) = (1, N_time, N_trials)
 data_e(after repeat) = (20, N_time, N_trials)
@@ -193,11 +212,8 @@ dat :: Array{Float64, 2}
 size(dat) = (N_time_total, 1(channel))
 the expecting unfold continous data structure is (channels,time),so do "permutedims"
 """
-  ╠═╡ =#
 
 # ╔═╡ 268a9bdc-af55-468c-9909-94f35e232a9b
-# ╠═╡ disabled = true
-#=╠═╡
 """fo = @formula 0 ~ 1 + condition + continuous 
 predictors = intercept + condition + continuous
 For whatever event types, use the algorithm fo + firbasis
@@ -205,17 +221,129 @@ For whatever event types, use the algorithm fo + firbasis
 expansion for every event.
 Use it to generate the design matrix.
 """
-  ╠═╡ =#
 
 # ╔═╡ 611dc46e-0239-4367-beda-839bce938d35
-# ╠═╡ disabled = true
-#=╠═╡
 # design(uf): return model's experimental design（events+ formula + basis + condition 
 # designmatrix(uf): return designmartix X
 # coef(uf): return β coefficients（event-related responses / kernels）
 # β shape = (predictors, channels, time) (epoch)
 # β shape = (1, predictors × timepoints) (fir)
 # coeftable(uf): “a tabel for all β，for better analysing and plotting”
+
+# ╔═╡ 6a37b67e-c803-4acf-aa5b-702e56be0130
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+    # 只放 N170 component
+	designDict_fir = [Any => (fo, UnfoldDecode.Unfold.firbasis(;τ=[-.1,0.5],sfreq=sfreq))]
+    rng_n1 = MersenneTwister(1)
+    components_n1 = [n1]
+
+    dat_n1, evts_n1 = simulate(rng_n1, design, components_n1, o, noise)
+
+    # 跟你 pipeline 一样：epoch + 多通道 + B2B FIR
+    dat_n1_e, times_n1 = UnfoldDecode.Unfold.epoch(dat_n1, evts_n1, [-0.1, 0.5], sfreq)
+    evts_n1_e, dat_n1_e = UnfoldDecode.Unfold.drop_missing_epochs(evts_n1, dat_n1_e)
+
+    dat_n1_e = repeat(dat_n1_e, 20, 1, 1)
+    dat_n1   = permutedims(repeat(dat_n1, 1, 20), [2, 1])
+
+    dat_n1_e .+= 0.1 .* rand(size(dat_n1_e)...)
+    dat_n1   .+= 0.1 .* rand(size(dat_n1)...)
+
+    m_n1_fir = UnfoldDecode.Unfold.fit(
+        UnfoldDecode.UnfoldModel,
+        designDict_fir,
+        evts_n1,
+        dat_n1;
+        solver = b2b_solver,
+    )
+end
+
+  ╠═╡ =#
+
+# ╔═╡ c1a461ab-1272-4bf2-b78c-1e33cd8b6e07
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+    
+	rng_p3 = MersenneTwister(2)
+    components_p3 = [p3]
+
+    dat_p3, evts_p3 = simulate(rng_p3, design, components_p3, o, noise)
+
+    dat_p3_e, times_p3 = UnfoldDecode.Unfold.epoch(dat_p3, evts_p3, [-0.1, 0.5], sfreq)
+    evts_p3_e, dat_p3_e = UnfoldDecode.Unfold.drop_missing_epochs(evts_p3, dat_p3_e)
+
+    dat_p3_e = repeat(dat_p3_e, 20, 1, 1)
+    dat_p3   = permutedims(repeat(dat_p3, 1, 20), [2, 1])
+
+    dat_p3_e .+= 0.1 .* rand(size(dat_p3_e)...)
+    dat_p3   .+= 0.1 .* rand(size(dat_p3)...)
+
+    m_p3_fir = UnfoldDecode.Unfold.fit(
+        UnfoldDecode.UnfoldModel,
+        designDict_fir,
+        evts_p3,
+        dat_p3;
+        solver = b2b_solver,
+    )
+end
+
+  ╠═╡ =#
+
+# ╔═╡ 2612fb5a-95fd-41b7-9d7f-4834bc1c27be
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+    using Statistics
+
+    # 只拿 FIR 那一栏
+    face_fir = results[
+        (results.type .== "firbasis") .& (results.coefname .== "condition: face"),
+        :
+    ]
+    cont_fir = results[
+        (results.type .== "firbasis") .& (results.coefname .== "continuous"),
+        :
+    ]
+
+    # 看看时间轴是不是对齐
+    println("time equal?  ", all(face_fir.time .== cont_fir.time))
+
+    # 看看数值差最大多少
+    diff_max = maximum(abs.(face_fir.estimate .- cont_fir.estimate))
+    println("max |difference| = ", diff_max)
+
+    diff_max
+end
+
+  ╠═╡ =#
+
+# ╔═╡ 13154e8e-8e6d-418a-9579-a12992241653
+#=╠═╡
+maximum(face_fir.estimate), maximum(cont_fir.estimate)
+
+  ╠═╡ =#
+
+# ╔═╡ 9273c4c2-e27e-4288-b7f1-6853f3304bce
+#=╠═╡
+begin
+
+    # 1. 峰值时间点
+    idx_face = argmax(face_fir.estimate)
+    idx_cont = argmax(cont_fir.estimate)
+    println("face peak at: ", face_fir.time[idx_face])
+    println("cont peak at: ", cont_fir.time[idx_cont])
+
+    # 2. 峰值大小
+    println("face max S = ", face_fir.estimate[idx_face])
+    println("cont max S = ", cont_fir.estimate[idx_cont])
+
+    # 3. 相关系数（形状相似度）
+    println("correlation = ", cor(face_fir.estimate, cont_fir.estimate))
+end
+
   ╠═╡ =#
 
 # ╔═╡ be9f733b-0089-4fe2-9bf4-21eb8fa31574
@@ -295,20 +423,8 @@ designDict = [Any => (fo, UnfoldDecode.Unfold.firbasis(;τ=[-.1,0.5],sfreq=sfreq
 m = UnfoldDecode.Unfold.fit(UnfoldDecode.UnfoldModel, designDict, evts, dat; solver = b2b_solver);
 	end
 
-# ╔═╡ 3c35eee0-e6f0-494c-bf58-fdd4cec331ba
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	size(UnfoldDecode.designmatrix(m))
-	first(coeftable(m), 30)
-end
-  ╠═╡ =#
-
 # ╔═╡ e50da9fe-3b6c-4e3d-a2f4-5eef63b06ad6
-# ╠═╡ disabled = true
-#=╠═╡
 plot_erp(coeftable(m))
-  ╠═╡ =#
 
 # ╔═╡ 75338a71-0c97-4fb4-a0b9-14f8061bbb6d
 # ╠═╡ show_logs = false
@@ -318,6 +434,12 @@ designDict_e = [Any => (fo, times)]
 
 m_e = UnfoldDecode.Unfold.fit(UnfoldDecode.UnfoldModel, designDict_e, evts_e, dat_e; solver = b2b_solver);
 	end
+
+# ╔═╡ 3c35eee0-e6f0-494c-bf58-fdd4cec331ba
+begin
+	size(UnfoldDecode.designmatrix(m_e))
+	first(coeftable(m_e), 30)
+end
 
 # ╔═╡ 282be3d7-8629-4517-8a4a-09056f2ccb09
 begin
@@ -359,7 +481,7 @@ WGLMakie = "~0.11.10"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.12.1"
+julia_version = "1.12.2"
 manifest_format = "2.0"
 project_hash = "e46dd0d1c7e3997d4c1316c9c4f5ce38e52fbe88"
 
@@ -1087,7 +1209,7 @@ version = "0.9.5"
 [[deps.Downloads]]
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
-version = "1.6.0"
+version = "1.7.0"
 
 [[deps.EarCut_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1765,7 +1887,7 @@ version = "0.6.4"
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "OpenSSL_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.11.1+1"
+version = "8.15.0+0"
 
 [[deps.LibGit2]]
 deps = ["LibGit2_jll", "NetworkOptions", "Printf", "SHA"]
@@ -2308,7 +2430,7 @@ version = "1.6.0"
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
-version = "3.5.1+0"
+version = "3.5.4+0"
 
 [[deps.OpenSpecFun_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl"]
@@ -3376,9 +3498,9 @@ uuid = "1317d2d5-d96f-522e-a858-c73665f53c3e"
 version = "2022.0.0+1"
 
 [[deps.p7zip_jll]]
-deps = ["Artifacts", "Libdl"]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
-version = "17.5.0+2"
+version = "17.7.0+0"
 
 [[deps.x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -3410,8 +3532,13 @@ version = "4.1.0+0"
 # ╠═75338a71-0c97-4fb4-a0b9-14f8061bbb6d
 # ╠═3c35eee0-e6f0-494c-bf58-fdd4cec331ba
 # ╠═e50da9fe-3b6c-4e3d-a2f4-5eef63b06ad6
+# ╟─6a37b67e-c803-4acf-aa5b-702e56be0130
+# ╟─c1a461ab-1272-4bf2-b78c-1e33cd8b6e07
 # ╠═282be3d7-8629-4517-8a4a-09056f2ccb09
 # ╠═72c66d70-ecb7-4edb-9cd2-13f4936ed5ab
+# ╟─2612fb5a-95fd-41b7-9d7f-4834bc1c27be
+# ╟─13154e8e-8e6d-418a-9579-a12992241653
+# ╟─9273c4c2-e27e-4288-b7f1-6853f3304bce
 # ╠═be9f733b-0089-4fe2-9bf4-21eb8fa31574
 # ╠═f625154a-2952-4ecf-884f-40ae5b6f7d10
 # ╠═9c9136fc-22ae-4ff2-b1eb-ca4941c1d5bb
