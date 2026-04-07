@@ -4,368 +4,182 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ aec97cff-2f71-43a9-b76e-dce5beda9677
-begin
-	import Pkg
-	Pkg.status("UnfoldSim") # needs UnfoldSim v0.5.0 for onsetformula
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    #! format: off
+    return quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+    #! format: on
 end
 
-# ╔═╡ e139563e-bb02-11f0-88d3-79fc67d926e4
-begin
-	using Random # to set random seeds (e.g. MersenneTwister(42))
+# ╔═╡ ea3fd520-f4bc-11f0-99ae-41b7e734eecf
+begin 
+	using Random # to set random seeds (e.g. MersenneTwister(42)) 
 	using UnfoldDecode # contains B2B 
 	using UnfoldSim # simulation 
 	using WGLMakie # plotting backend 
-	using StatsModels
-	using UnfoldMakie # plotting library for unfold models
+	using Statistics
+	using StatsModels 
+	using UnfoldMakie # plotting library for unfold models 
+	using PlutoUI
 end
 
-# ╔═╡ 24cc1c6a-f65b-411b-a8db-1c6291e4c92c
-sfreq = 50
+# ╔═╡ 7ade1cb1-f67c-4f5e-b6d5-eadda37beb30
+begin 
+	sfreq = 50
+	fo = @formula 0 ~ 1 + condition + continuous 
+	cross_val_reps = 2 # we have multithreading activated, but not sure how well it scales, choose wisely ;)	
+end
 
-# ╔═╡ ef0541ff-2b91-4e61-94ca-cead859d3ea9
-fo = @formula 0 ~ 1 + condition + continuous
-
-# ╔═╡ 701356ca-a25b-49fe-bd4e-650562963df7
-cross_val_reps = 3 # we have multithreading activated, but not sure how well it scales, choose wisely ;)
-
-
-# ╔═╡ 604e1ee4-3b27-44de-b399-b46ca4195eaa
+# ╔═╡ f54d1e90-c466-4017-bbc8-aeb8b8b8ffb9
 begin
-"""Uniform Onset formula
-	"""
-	rng = MersenneTwister(42)
-	design = 
-		SingleSubjectDesign(;
-			conditions = Dict(
-				:condition => ["car", "face"],
-				:continuous => range(0, 5; length=10),
-			),
-			event_order_function = shuffle,
-		) |> d -> RepeatDesign(d,20)
+	rng0 = MersenneTwister(42)
+	
+	Δ = 3.0
+	
+	eventfun = (rng,evts) -> begin
+        evts = deepcopy(evts)  # 不要原地改，避免 Pluto 反复执行出怪问题
+        evts.continuous = Float64.(evts.continuous)
+        evts.continuous[evts.condition .== "face"] .+= Δ  # face 的 continuous 更大 -> 高共线
+        evts = evts[Random.randperm(rng, size(evts, 1)), :]
+        return evts
+    end
 
-
-
+	
+	design = SingleSubjectDesign(;
+		conditions = Dict(:condition => ["car", "face"],
+						  :continuous => range(0, 5; length=10)),
+		event_order_function = eventfun,
+	) |> d -> RepeatDesign(d, 200)
+	
 	n1 = LinearModelComponent(;
 		basis = n170(; sfreq=sfreq),
 		β = [5.0, 3.0], # face trail amp bigger than car
 		formula = @formula(0 ~ 1 + condition),
 	)
-
-	p3 = LinearModelComponent(;
-		basis = p300(; sfreq=sfreq),
-		formula = @formula(0 ~ 1 + continuous),
-		β = [5.0, 1.0], # the bigger the continous, the bigger the p300
+	
+	p3 = LinearModelComponent(
+    	basis = p300(; sfreq=sfreq),
+    	formula = @formula(0 ~ 1 + continuous),
+    	β = [5.0, 1.0], # the bigger the continuous, the bigger the p300
 	)
-			
 	components = [n1, p3]
+end
+
+# ╔═╡ 54efc2ab-c8c2-465a-bf2c-493678d1f4a7
+begin
+    m_car_widget   = Slider(150:10:600, default=250, show_value=true)
+    m_face_widget  = Slider(150:10:600, default=180, show_value=true)
+    sigma_widget   = Slider(0.10:0.05:0.80, default=0.35, show_value=true)
+    offset_widget  = Slider(0:20:200, default=20, show_value=true)
+
+    @bind m_car_ms   m_car_widget
+    @bind m_face_ms  m_face_widget
+    @bind σ          sigma_widget
+    @bind offset_ms  offset_widget
+
+    PlutoUI.combine() do Child
+        md"""
+        **m_car_ms**:  $(Child(m_car_widget))
+
+        **m_face_ms**: $(Child(m_face_widget))
+
+        **σ (sigma)**: $(Child(sigma_widget))
+
+        **offset_ms**: $(Child(offset_widget))
+        """
+    end
+end
+
+# ╔═╡ 64e6efc8-0f7d-46e3-b851-0a653fe92771
+begin
+    offset = offset_ms/1000 * sfreq
+    m_car  = m_car_ms/1000 * sfreq
+    m_face = m_face_ms/1000 * sfreq
+
+    if (m_car - offset) <= 0 || (m_face - offset) <= 0
+        "offset too big"
+    else
+        μ_car   = log(m_car - offset) - (σ^2)/2
+        Δμ_face = log((m_face - offset)/(m_car - offset))
+
+        log_n_o = LogNormalOnsetFormula(
+            μ_formula = @formula(0 ~ 1 + condition),
+            μ_β = [μ_car, Δμ_face],
+            μ_contrasts = Dict(:condition => DummyCoding(base="car", levels=["car","face"])),
+            σ_β = [σ],
+            offset_β = [offset],
+            truncate_upper = nothing
+        )
+		
+
+        let rng = deepcopy(rng0)
+            events_isi = UnfoldSim.generate_events(deepcopy(rng), design)
+            onsets_isi = UnfoldSim.simulate_interonset_distances(deepcopy(rng), log_n_o, design)
+
+            mask_car  = events_isi.condition .== "car"
+            mask_face = events_isi.condition .== "face"
+
+			f_width = Figure()
+    		ax_width = Axis(f_width[1, 1];
+                    xlabel = "Samples",
+                    ylabel = "Count",
+                    title  = "Inter-Stimulus Interval (isi)/Inter-Onset Interval by 								condition")
+
+    		hist!(ax_width,
+					onsets_isi[mask_car],
+          			bins  = 0:2:100,
+          			label = "car")
+
+		    hist!(ax_width,
+        			onsets_isi[mask_face],
+          			bins  = 0:2:100,
+          			label = "face")
+
+    		axislegend(ax_width)
+
+    		f_width   
+
+        end
+    end
+end
 
 
+# ╔═╡ 0e106ac7-7cb9-4bfd-a907-a5c03f6df4b7
+begin
+	ev_check = UnfoldSim.generate_events(MersenneTwister(1), design)
+	names(ev_check), first(ev_check, 3)
+end
 
-	# uniform onset formula
-	#o = UniformOnset(; width = 50, offset = 0);
-	#o = UnfoldSim.UniformOnsetFormula(
-	#	width_formula = @formula(0 ~ 1 + condition),
-	#	width_β = [50.0, 20.0],# longer width,less overlap for face condition
-		# bias inter-onset intervals by condition to modify the overlap.
-	#)
-
-
-
-	# logNormalOnset
-	#log_n_o = LogNormalOnset(; μ = 3, σ = 0.25, offset = 0, truncate_upper = nothing);
-	
-	target_mean_ms = 250.0
-	target_mean_samples = target_mean_ms/1000 * sfreq
-	σ = 0.35
-	μ0 = log(target_mean_samples) - (σ^2)/2
-	
-	log_n_o = LogNormalOnsetFormula(
-		μ_formula = @formula(0 ~ 1 + condition + continuous),
-		μ_β = [μ0, 0.10, 0.05],      # [Intercept, condition(face), continuous]    
-    	σ_β = [σ],          
-    	offset_β = [0.0],
-		truncate_upper = nothing,
-		)
-
-
-			
-	events = generate_events(design)
-	onsets = UnfoldSim.simulate_interonset_distances(MersenneTwister(42), log_n_o, design)
+# ╔═╡ 296efed3-ee26-4b1e-a6eb-b0bbf734ed28
+begin
 	noise = PinkNoise(; noiselevel=0.1)
-	dat, evts = simulate(rng, design, components, log_n_o, noise)
-
+	dat, evts = simulate(rng0, design, components, log_n_o, noise)
 	
-	"""Bene's Simulation
-		"""
-	# sim continuous data, but only 1 channel
-	# dat, evts = UnfoldSim.predef_eeg(; noiselevel = 0.5,sfreq);
-	
-	
-	# cut it to epochs, date_e(ch x time x trial),[pre100ms,post500ms]
 	dat_e,times = UnfoldDecode.Unfold.epoch(dat,evts,[-0.1,0.5],sfreq)
-	
-	# remove missings / half epochs
 	evts_e,dat_e = UnfoldDecode.Unfold.drop_missing_epochs(evts,dat_e)
 	
-	# repeat the data to fake 20 channels (b2b is multivariate)
 	dat_e = repeat(dat_e,20,1,1)
-	dat = permutedims(repeat(dat, 1, 20), [2 1]); # we need to permute for some reason
-
-	# we need to add noise again else we would have the same channels. A proper simulation would simulate multi-channel data immediately; but that PR is not yet merged
+	dat = permutedims(repeat(dat, 1, 20), [2 1]);
+	
 	dat_e .+= 0.1 * rand(size(dat_e)...);
 	dat .+= 0.1 * rand(size(dat)...);
 end
 
-
-# ╔═╡ 0f4e4a17-a33b-4625-9b1e-fddae24d7c73
-# plot the different inter-onset intervals
+# ╔═╡ b6db1b47-4875-4937-a5df-dc8d1e3d3559
 begin
-	rng_isi = MersenneTwister(42)
-	events_isi = UnfoldSim.generate_events(deepcopy(rng_isi), design)
-	onsets_isi     = UnfoldSim.simulate_interonset_distances(deepcopy(rng_isi), log_n_o, design)
-	mask_car  = events_isi.condition .== "car"
-    mask_face = events_isi.condition .== "face"
-	
-    f_width = Figure()
-    ax_width = Axis(f_width[1, 1];
-                    xlabel = "Samples",
-                    ylabel = "Count",
-                    title  = "Inter-Stimulus Interval (isi)/Inter-Onset Interval by condition")
-
-    hist!(ax_width,
-          onsets_isi[mask_car],
-          bins  = 0:2:100,
-          label = "car")
-
-    hist!(ax_width,
-          onsets_isi[mask_face],
-          bins  = 0:2:100,
-          label = "face")
-
-    axislegend(ax_width)
-
-    f_width   
+    face01 = evts.condition .== "face"
+    println("mean(face) = ", mean(evts.continuous[face01]))
+    println("mean(car)  = ", mean(evts.continuous[.!face01]))
+    println("cor(cont, face) = ", cor(evts.continuous, Float64.(face01)))
 end
 
 
-# ╔═╡ 8444b492-16b8-451c-b839-4769e5363c78
-begin
-    # basis waveforms (the same as in the component simulation)
-    n1_basis = UnfoldSim.n170(; sfreq = sfreq)
-    p3_basis = UnfoldSim.p300(; sfreq = sfreq)
-
-    # β in component simulation
-    β0_n1, β1_n1 = 5.0, 3.0   # N170: intercept, condition:face
-    β0_p3, β1_p3 = 5.0, 1.0   # P300: intercept, continuous
-
-    # N170: car / face / effect 
-    true_car_n1   = β0_n1 .* n1_basis                 # car = 5 * N170
-    true_face_n1  = (β0_n1 + β1_n1) .* n1_basis       # face = 8 * N170
-    true_n1_eff   = β1_n1 .* n1_basis                 # face - car = 3 * N170
-
-    # P300: continuous effect
-    true_p3_eff   = β1_p3 .* p3_basis                 # 1 * P300
-
-    # time axis
-    dt   = 1 / sfreq
-    t_n1 = collect(0:length(n1_basis)-1) .* dt
-    t_p3 = collect(0:length(p3_basis)-1) .* dt
-
-    set_theme!(Theme(
-        Axis = (xgridvisible = false,
-                ygridvisible = false,
-                rightspinevisible = false,
-                topspinevisible = false)
-    ))
-
-    f = Figure()
-
-    # Panel 1: N170, car vs face
-    ax1 = Axis(f[1, 1],
-               xlabel = "Time (s)",
-               ylabel = "Amplitude",
-               title  = "Ground truth N170 (car vs face)")
-    lines!(ax1, t_n1, true_car_n1,  label = "car (N170)")
-    lines!(ax1, t_n1, true_face_n1, label = "face (N170)")
-    axislegend(ax1, position = :rb, framevisible = false)
-
-    # Panel 2: predictors effect kernels
-    ax2 = Axis(f[2, 1],
-               xlabel = "Time (s)",
-               ylabel = "Amplitude",
-               title  = "Ground truth effect kernels")
-    lines!(ax2, t_n1, true_n1_eff, label = "condition: face (N170 effect)")
-    lines!(ax2, t_p3, true_p3_eff, label = "continuous (P300 effect)")
-    axislegend(ax2, position = :rb, framevisible = false)
-
-    f
-end
-
-
-# ╔═╡ ce2b7a04-4511-4867-9446-7783606f8cb5
-"""dat_e :: Array{Float63, 3}
-size(date_e) = (1, N_time, N_trials)
-data_e(after repeat) = (20, N_time, N_trials)
-
-dat :: Array{Float64, 2}
-size(dat) = (N_time_total, 1(channel))
-the expecting unfold continous data structure is (channels,time),so do "permutedims"
-"""
-
-# ╔═╡ 268a9bdc-af55-468c-9909-94f35e232a9b
-"""fo = @formula 0 ~ 1 + condition + continuous 
-predictors = intercept + condition + continuous
-For whatever event types, use the algorithm fo + firbasis
-(;τ=[-.1,0.5],sfreq=sfreq) from -100ms to 500 ms, apply firbasis to do time
-expansion for every event.
-Use it to generate the design matrix.
-"""
-
-# ╔═╡ 611dc46e-0239-4367-beda-839bce938d35
-# design(uf): return model's experimental design（events+ formula + basis + condition 
-# designmatrix(uf): return designmartix X
-# coef(uf): return β coefficients（event-related responses / kernels）
-# β shape = (predictors, channels, time) (epoch)
-# β shape = (1, predictors × timepoints) (fir)
-# coeftable(uf): “a tabel for all β，for better analysing and plotting”
-
-# ╔═╡ 6a37b67e-c803-4acf-aa5b-702e56be0130
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-    # 只放 N170 component
-	designDict_fir = [Any => (fo, UnfoldDecode.Unfold.firbasis(;τ=[-.1,0.5],sfreq=sfreq))]
-    rng_n1 = MersenneTwister(1)
-    components_n1 = [n1]
-
-    dat_n1, evts_n1 = simulate(rng_n1, design, components_n1, o, noise)
-
-    # 跟你 pipeline 一样：epoch + 多通道 + B2B FIR
-    dat_n1_e, times_n1 = UnfoldDecode.Unfold.epoch(dat_n1, evts_n1, [-0.1, 0.5], sfreq)
-    evts_n1_e, dat_n1_e = UnfoldDecode.Unfold.drop_missing_epochs(evts_n1, dat_n1_e)
-
-    dat_n1_e = repeat(dat_n1_e, 20, 1, 1)
-    dat_n1   = permutedims(repeat(dat_n1, 1, 20), [2, 1])
-
-    dat_n1_e .+= 0.1 .* rand(size(dat_n1_e)...)
-    dat_n1   .+= 0.1 .* rand(size(dat_n1)...)
-
-    m_n1_fir = UnfoldDecode.Unfold.fit(
-        UnfoldDecode.UnfoldModel,
-        designDict_fir,
-        evts_n1,
-        dat_n1;
-        solver = b2b_solver,
-    )
-end
-
-  ╠═╡ =#
-
-# ╔═╡ c1a461ab-1272-4bf2-b78c-1e33cd8b6e07
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-    
-	rng_p3 = MersenneTwister(2)
-    components_p3 = [p3]
-
-    dat_p3, evts_p3 = simulate(rng_p3, design, components_p3, o, noise)
-
-    dat_p3_e, times_p3 = UnfoldDecode.Unfold.epoch(dat_p3, evts_p3, [-0.1, 0.5], sfreq)
-    evts_p3_e, dat_p3_e = UnfoldDecode.Unfold.drop_missing_epochs(evts_p3, dat_p3_e)
-
-    dat_p3_e = repeat(dat_p3_e, 20, 1, 1)
-    dat_p3   = permutedims(repeat(dat_p3, 1, 20), [2, 1])
-
-    dat_p3_e .+= 0.1 .* rand(size(dat_p3_e)...)
-    dat_p3   .+= 0.1 .* rand(size(dat_p3)...)
-
-    m_p3_fir = UnfoldDecode.Unfold.fit(
-        UnfoldDecode.UnfoldModel,
-        designDict_fir,
-        evts_p3,
-        dat_p3;
-        solver = b2b_solver,
-    )
-end
-
-  ╠═╡ =#
-
-# ╔═╡ 2612fb5a-95fd-41b7-9d7f-4834bc1c27be
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-    using Statistics
-
-    # 只拿 FIR 那一栏
-    face_fir = results[
-        (results.type .== "firbasis") .& (results.coefname .== "condition: face"),
-        :
-    ]
-    cont_fir = results[
-        (results.type .== "firbasis") .& (results.coefname .== "continuous"),
-        :
-    ]
-
-    # 看看时间轴是不是对齐
-    println("time equal?  ", all(face_fir.time .== cont_fir.time))
-
-    # 看看数值差最大多少
-    diff_max = maximum(abs.(face_fir.estimate .- cont_fir.estimate))
-    println("max |difference| = ", diff_max)
-
-    diff_max
-end
-
-  ╠═╡ =#
-
-# ╔═╡ 13154e8e-8e6d-418a-9579-a12992241653
-#=╠═╡
-maximum(face_fir.estimate), maximum(cont_fir.estimate)
-
-  ╠═╡ =#
-
-# ╔═╡ 9273c4c2-e27e-4288-b7f1-6853f3304bce
-#=╠═╡
-begin
-
-    # 1. 峰值时间点
-    idx_face = argmax(face_fir.estimate)
-    idx_cont = argmax(cont_fir.estimate)
-    println("face peak at: ", face_fir.time[idx_face])
-    println("cont peak at: ", cont_fir.time[idx_cont])
-
-    # 2. 峰值大小
-    println("face max S = ", face_fir.estimate[idx_face])
-    println("cont max S = ", cont_fir.estimate[idx_cont])
-
-    # 3. 相关系数（形状相似度）
-    println("correlation = ", cor(face_fir.estimate, cont_fir.estimate))
-end
-
-  ╠═╡ =#
-
-# ╔═╡ be9f733b-0089-4fe2-9bf4-21eb8fa31574
-WGLMakie.Page() #run this command if plots dont show up, then rerun the plots
-
-# ╔═╡ f625154a-2952-4ecf-884f-40ae5b6f7d10
-"""
-B2B estimates a time-resolved effect strength S(t) for each predictor.
-Each time point has an estimated value（beta，abosulte|S|）
-B2B only recovers effect magnitudes, not the sign/direction of the effect.
-
-beta = UnfoldDecode.diag(E), which is one dimension
-reshape(beta, 1, :): 1 x p, change to a 2D matrix, no chaning numbers
-S = diag(E)
-beta = UnfoldDecode.diag(E) , which is "S"
-coef(m) = beta, coeftable(m) = S
-x = X, y = data
-
-Given the design matrix X and continuous multi-channel EEG data, use the B2B algorithm to estimate the effect strength S for each predictor, then wrap the result in a LinearModelFit and return it.
-"""
-
-# ╔═╡ 9c9136fc-22ae-4ff2-b1eb-ca4941c1d5bb
+# ╔═╡ 5868c13f-2e86-418e-835f-91a4384e3d58
 # This function should be moved to UnfoldDecode - it allows to run the solver also for time-continuous data. Most likely model_ridge is not a good fit for this datastructure though
 function UnfoldDecode.solver_b2b(                     # when T is a number,
     X, # design matrix, (n_samples x n_predictors), after FIR, every element in diag(E) is the “effect strength” estimate of one of the predictors 
@@ -386,7 +200,7 @@ function UnfoldDecode.solver_b2b(                     # when T is a number,
     #@maybe_threads multithreading for t = 1:size(data, 2)
 
 
-	# Loops for repeting B2B cross_val_reps
+	# Loops for repeating B2B cross_val_reps
 	UnfoldDecode.@maybe_threads multithreading for m = 1:cross_val_reps
 		k_ix = collect(UnfoldDecode.Kfold(size(data, 2), 2))
 		Y1 = data[:,  k_ix[1]] # views here made it much slower
@@ -412,22 +226,10 @@ function UnfoldDecode.solver_b2b(                     # when T is a number,
     return UnfoldDecode.Unfold.LinearModelFit{eltype(beta),2}(beta, modelinfo)
 end
 
-# ╔═╡ beacd764-eac4-4082-b6e5-21150a26a2f2
+# ╔═╡ 641f73b6-1e5b-42e2-a426-27456db8349e
 b2b_solver = (x, y) -> UnfoldDecode.solver_b2b(x, y; cross_val_reps);
 
-# ╔═╡ a51f5618-4b7c-48e3-b9bc-24f1f0a127f7
-begin
-# Overlap-Corrected B2B - careful, quite slow!!
-designDict = [Any => (fo, UnfoldDecode.Unfold.firbasis(;τ=[-.1,0.5],sfreq=sfreq))]
-
-m = UnfoldDecode.Unfold.fit(UnfoldDecode.UnfoldModel, designDict, evts, dat; solver = b2b_solver);
-	end
-
-# ╔═╡ e50da9fe-3b6c-4e3d-a2f4-5eef63b06ad6
-plot_erp(coeftable(m))
-
-# ╔═╡ 75338a71-0c97-4fb4-a0b9-14f8061bbb6d
-# ╠═╡ show_logs = false
+# ╔═╡ b6ee9e84-1f3e-4f96-9ef8-75a941540431
 begin
 # Standard B2B
 designDict_e = [Any => (fo, times)]
@@ -435,13 +237,15 @@ designDict_e = [Any => (fo, times)]
 m_e = UnfoldDecode.Unfold.fit(UnfoldDecode.UnfoldModel, designDict_e, evts_e, dat_e; solver = b2b_solver);
 	end
 
-# ╔═╡ 3c35eee0-e6f0-494c-bf58-fdd4cec331ba
+# ╔═╡ cc6faf5d-c29d-490c-8064-2372b031fb72
 begin
-	size(UnfoldDecode.designmatrix(m_e))
-	first(coeftable(m_e), 30)
-end
+# Overlap-Corrected B2B - careful, quite slow!!
+designDict = [Any => (fo, UnfoldDecode.Unfold.firbasis(;τ=[-.1,0.5],sfreq=sfreq))]
 
-# ╔═╡ 282be3d7-8629-4517-8a4a-09056f2ccb09
+m = UnfoldDecode.Unfold.fit(UnfoldDecode.UnfoldModel, designDict, evts, dat; solver = b2b_solver);
+	end
+
+# ╔═╡ 22c97ac5-a94a-4d42-8d8f-31fd03282e12
 begin
 # extract results as a tidy dataframe
 results = coeftable(m);
@@ -455,13 +259,98 @@ results.estimate = abs.(results.estimate); ## back2back has no sign
 results = results[results.coefname.!="(Intercept)", :]; # we dont know how to interpret the intercept ;-) 
 end;
 
-# ╔═╡ 72c66d70-ecb7-4edb-9cd2-13f4936ed5ab
+# ╔═╡ 1b1db2b8-7da0-43fc-8c6d-ab97f3ec3268
 plot_erp(results;mapping=(;col=:type))
+
+# ╔═╡ 6551dfd5-00c5-4167-b69a-4f6019b729e4
+plot_erp(results[results.coefname .== "condition: face", :]; mapping=(;col=:type))
+
+# ╔═╡ 8576a141-20ef-4f13-bfb2-3601f9a8b5f8
+plot_erp(results[results.coefname .== "continuous", :];     mapping=(;col=:type))
+
+# ╔═╡ 7ef68b9f-ab6d-445d-810b-a1a282b08327
+begin
+
+    # --- helper ---
+    normalize01(y) = (m = maximum(abs.(y)); m == 0 ? y : y ./ m)
+
+    function get_curve(df, typ, coef)
+        sub = df[(df.type .== typ) .& (df.coefname .== coef), :]
+        sub = sort(sub, :time)
+        return sub.time, sub.estimate
+    end
+
+    # 把估计的符号对齐到 ground truth（避免 B2B 翻符号）
+    function align_sign(y, gt)
+        s = sign(sum(y .* gt))
+        s == 0 ? y : s .* y
+    end
+
+    # 把某个 basis*β 投到指定 times（times 含 -0.1~0.5；basis 从 0 开始）
+    function gt_on(times, basis, β; sfreq=sfreq)
+        t_end = (length(basis)-1) / sfreq
+        out = zeros(length(times))
+        for (i, tt) in enumerate(times)
+            if 0 <= tt <= t_end
+                k = Int(round(tt * sfreq)) + 1
+                out[i] = β * basis[k]
+            end
+        end
+        out
+    end
+
+    # --- curves from results ---
+    t_ep_c, y_ep_c = get_curve(results, "epoch",   "condition: face")
+    t_fi_c, y_fi_c = get_curve(results, "firbasis","condition: face")
+
+    t_ep_x, y_ep_x = get_curve(results, "epoch",   "continuous")
+    t_fi_x, y_fi_x = get_curve(results, "firbasis","continuous")
+
+    # --- ground truth ---
+    gt_c_ep = gt_on(t_ep_c, n1.basis, n1.β[2])   # condition effect = 3*n170
+    gt_c_fi = gt_on(t_fi_c, n1.basis, n1.β[2])
+
+    gt_x_ep = gt_on(t_ep_x, p3.basis, p3.β[2])   # continuous effect = 1*p300
+    gt_x_fi = gt_on(t_fi_x, p3.basis, p3.β[2])
+
+    # --- sign align (important) ---
+    y_ep_c2 = align_sign(y_ep_c, gt_c_ep)
+    y_fi_c2 = align_sign(y_fi_c, gt_c_fi)
+
+    y_ep_x2 = align_sign(y_ep_x, gt_x_ep)
+    y_fi_x2 = align_sign(y_fi_x, gt_x_fi)
+
+    ticks = collect(-0.1:0.1:0.5)
+
+    # ---- 4 plots (separate, easier to read) ----
+    function plot_one(title, t, y, gt)
+        f = Figure(size=(700, 320), figure_padding=(10, 12, 10, 8))
+        ax = Axis(f[1,1], title=title, xlabel="Time (s)", ylabel="scaled", xticks=ticks)
+        lines!(ax, t, normalize01(y),  label="estimate")
+        lines!(ax, t, normalize01(gt), label="ground truth", linestyle=:dash)
+        axislegend(ax; position=:rt)
+        xlims!(ax, -0.1, 0.5)
+        f
+    end
+
+    f1 = plot_one("epoch: condition(face)",   t_ep_c, y_ep_c2, gt_c_ep)
+    f2 = plot_one("firbasis: condition(face)",t_fi_c, y_fi_c2, gt_c_fi)
+    f3 = plot_one("epoch: continuous",        t_ep_x, y_ep_x2, gt_x_ep)
+    f4 = plot_one("firbasis: continuous",     t_fi_x, y_fi_x2, gt_x_fi)
+
+    md"""$(f1)
+
+$(f2)
+
+$(f3)
+
+$(f4)"""
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
-Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsModels = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
@@ -471,6 +360,7 @@ UnfoldSim = "ed8ae6d2-84d3-44c6-ab46-0baf21700804"
 WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
 
 [compat]
+PlutoUI = "~0.7.78"
 StatsModels = "~0.7.7"
 UnfoldDecode = "~0.1.1"
 UnfoldMakie = "~0.5.21"
@@ -484,7 +374,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.12.3"
 manifest_format = "2.0"
-project_hash = "99b38e5afabd0ce5715224431a27a1b1ac35f2bf"
+project_hash = "9243fcf6576c5c9a7cbc6dcda2658e579dab0952"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "8b2b045b22740e4be20654175cc38291d48539db"
@@ -517,6 +407,12 @@ weakdeps = ["ChainRulesCore", "Test"]
     [deps.AbstractFFTs.extensions]
     AbstractFFTsChainRulesCoreExt = "ChainRulesCore"
     AbstractFFTsTestExt = "Test"
+
+[[deps.AbstractPlutoDingetjes]]
+deps = ["Pkg"]
+git-tree-sha1 = "6e1d2a35f2f90a4bc7c2ed98079b2ba09c35b83a"
+uuid = "6e696c72-6542-2067-7265-42206c756150"
+version = "1.3.2"
 
 [[deps.AbstractTrees]]
 git-tree-sha1 = "2d9c9a55f9c93e8887ad391fbae72f8ef55e1177"
@@ -1566,6 +1462,18 @@ git-tree-sha1 = "179267cfa5e712760cd43dcae385d7ea90cc25a4"
 uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
 version = "0.0.5"
 
+[[deps.HypertextLiteral]]
+deps = ["Tricks"]
+git-tree-sha1 = "7134810b1afce04bbc1045ca1985fbe81ce17653"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.5"
+
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "0ee181ec08df7d7c911901ea38baf16f755114dc"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "1.0.0"
+
 [[deps.IfElse]]
 git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
 uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
@@ -2006,6 +1914,11 @@ git-tree-sha1 = "191686b1ac1ea9c89fc52e996ad15d1d241d1e33"
 uuid = "5ced341a-0733-55b8-9ab6-a4889d929147"
 version = "1.10.1+0"
 
+[[deps.MIMEs]]
+git-tree-sha1 = "c64d943587f7187e751162b3b84445bbbd79f691"
+uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
+version = "1.1.0"
+
 [[deps.MKL_jll]]
 deps = ["Artifacts", "IntelOpenMP_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "oneTBB_jll"]
 git-tree-sha1 = "282cadc186e7b2ae0eeadbd7a4dffed4196ae2aa"
@@ -2424,9 +2337,9 @@ version = "5.0.9+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "NetworkOptions", "OpenSSL_jll", "Sockets"]
-git-tree-sha1 = "386b47442468acfb1add94bf2d85365dea10cbab"
+git-tree-sha1 = "1d1aaa7d449b58415f97d2839c318b70ffb525a0"
 uuid = "4d8831e6-92b7-49fb-bdf8-b643e874388c"
-version = "1.6.0"
+version = "1.6.1"
 
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -2540,6 +2453,12 @@ git-tree-sha1 = "26ca162858917496748aad52bb5d3be4d26a228a"
 uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
 version = "1.4.4"
 
+[[deps.PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "Downloads", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
+git-tree-sha1 = "6122f9423393a2294e26a4efdf44960c5f8acb70"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.78"
+
 [[deps.PolygonOps]]
 git-tree-sha1 = "77b3d3605fc1cd0b42d95eba87dfcd2bf67d5ff6"
 uuid = "647866c9-e3ac-4575-94e7-e3d426903924"
@@ -2583,9 +2502,9 @@ version = "1.3.3"
 
 [[deps.Preferences]]
 deps = ["TOML"]
-git-tree-sha1 = "0f27480397253da18fe2c12a4ba4eb9eb208bf3d"
+git-tree-sha1 = "522f093a29b31a93e34eaea17ba055d850edea28"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
-version = "1.5.0"
+version = "1.5.1"
 
 [[deps.PrettyPrint]]
 git-tree-sha1 = "632eb4abab3449ab30c5e1afaa874f0b98b586e4"
@@ -3189,6 +3108,11 @@ version = "0.4.85"
     OnlineStatsBase = "925886fa-5bf2-5e8e-b522-a9147a512338"
     Referenceables = "42d2dcc6-99eb-4e98-b66c-637b7d73030e"
 
+[[deps.Tricks]]
+git-tree-sha1 = "311349fd1c93a31f783f977a71e8b062a57d4101"
+uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
+version = "0.1.13"
+
 [[deps.TriplotBase]]
 git-tree-sha1 = "4d4ed7f294cda19382ff7de4c137d24d16adc89b"
 uuid = "981d1d27-644d-49a2-9326-4793e63143c3"
@@ -3517,31 +3441,22 @@ version = "4.1.0+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═aec97cff-2f71-43a9-b76e-dce5beda9677
-# ╠═e139563e-bb02-11f0-88d3-79fc67d926e4
-# ╠═24cc1c6a-f65b-411b-a8db-1c6291e4c92c
-# ╠═ef0541ff-2b91-4e61-94ca-cead859d3ea9
-# ╠═701356ca-a25b-49fe-bd4e-650562963df7
-# ╠═604e1ee4-3b27-44de-b399-b46ca4195eaa
-# ╠═0f4e4a17-a33b-4625-9b1e-fddae24d7c73
-# ╠═8444b492-16b8-451c-b839-4769e5363c78
-# ╠═ce2b7a04-4511-4867-9446-7783606f8cb5
-# ╠═268a9bdc-af55-468c-9909-94f35e232a9b
-# ╠═611dc46e-0239-4367-beda-839bce938d35
-# ╠═beacd764-eac4-4082-b6e5-21150a26a2f2
-# ╠═a51f5618-4b7c-48e3-b9bc-24f1f0a127f7
-# ╠═75338a71-0c97-4fb4-a0b9-14f8061bbb6d
-# ╠═3c35eee0-e6f0-494c-bf58-fdd4cec331ba
-# ╠═e50da9fe-3b6c-4e3d-a2f4-5eef63b06ad6
-# ╟─6a37b67e-c803-4acf-aa5b-702e56be0130
-# ╟─c1a461ab-1272-4bf2-b78c-1e33cd8b6e07
-# ╠═282be3d7-8629-4517-8a4a-09056f2ccb09
-# ╠═72c66d70-ecb7-4edb-9cd2-13f4936ed5ab
-# ╟─2612fb5a-95fd-41b7-9d7f-4834bc1c27be
-# ╟─13154e8e-8e6d-418a-9579-a12992241653
-# ╟─9273c4c2-e27e-4288-b7f1-6853f3304bce
-# ╠═be9f733b-0089-4fe2-9bf4-21eb8fa31574
-# ╠═f625154a-2952-4ecf-884f-40ae5b6f7d10
-# ╠═9c9136fc-22ae-4ff2-b1eb-ca4941c1d5bb
+# ╠═ea3fd520-f4bc-11f0-99ae-41b7e734eecf
+# ╠═7ade1cb1-f67c-4f5e-b6d5-eadda37beb30
+# ╠═f54d1e90-c466-4017-bbc8-aeb8b8b8ffb9
+# ╠═54efc2ab-c8c2-465a-bf2c-493678d1f4a7
+# ╠═64e6efc8-0f7d-46e3-b851-0a653fe92771
+# ╠═0e106ac7-7cb9-4bfd-a907-a5c03f6df4b7
+# ╠═296efed3-ee26-4b1e-a6eb-b0bbf734ed28
+# ╠═b6db1b47-4875-4937-a5df-dc8d1e3d3559
+# ╠═641f73b6-1e5b-42e2-a426-27456db8349e
+# ╠═b6ee9e84-1f3e-4f96-9ef8-75a941540431
+# ╠═cc6faf5d-c29d-490c-8064-2372b031fb72
+# ╠═22c97ac5-a94a-4d42-8d8f-31fd03282e12
+# ╠═1b1db2b8-7da0-43fc-8c6d-ab97f3ec3268
+# ╠═6551dfd5-00c5-4167-b69a-4f6019b729e4
+# ╠═8576a141-20ef-4f13-bfb2-3601f9a8b5f8
+# ╠═7ef68b9f-ab6d-445d-810b-a1a282b08327
+# ╠═5868c13f-2e86-418e-835f-91a4384e3d58
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
