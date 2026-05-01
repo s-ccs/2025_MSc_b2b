@@ -77,7 +77,7 @@ hat(S) &= "diag"(hat(H))
 $
 
 
-B2B combines both the benefits of forward and backward modelling to provide interpretable and unidimensional coefficient estimates for each factor. B2B has been shown to be a promising analytical method, and it was applied to reading task to decompose different word features that relate to different brain responses. In their results, word length and word frequency emerged as key effects, with evidence consistent with earlier effects in visual processing and later evoked N400 responses.
+B2B combines both the benefits of forward and backward modelling to provide interpretable and unidimensional coefficient estimates for each factor. B2B has been shown to be a promising analytical method, and it was applied to a reading task to decompose different word features that relate to different brain responses. In their results, word length and word frequency emerged as key effects, with evidence consistent with earlier effects in visual processing and later evoked N400 responses.
 
 
 #figure(
@@ -134,7 +134,7 @@ B2B combines both the benefits of forward and backward modelling to provide inte
 #set enum(numbering: "A.", start: 5) // continue the numbering from where the main goals left off. Adjust `start` depending on how many main goals you have.
 #[
   #show figure: set align(left) 
-  + #goal("Different solver variants in the B2B backward step (L2/ridge vs. linear SVM) are evaluated and compared to access how solver choice affects decoding accuracy and result stability in the simulations.") <goal5>
+  + #goal("Different solver variants in the B2B backward step (L2/ridge vs. linear SVM) are evaluated and compared to assess how solver choice affects decoding accuracy and result stability in the simulations.") <goal5>
 ]
 
 == Approach <approach>
@@ -172,7 +172,7 @@ Five pipelines are compared:
 
 
 === Evaluation criteria (*@goal2*, *@goal5*)
-- In simulations, ground truth is defined in terms of multi-source predictor-specific waveform shapes; performance is therefore evaluated by the time-course similarity between $hat(beta)_i (t)$ and $beta_i^("true")(t)$, using e.g. correlation or RMSE. Or cross-talk martix will be used: 
+- In simulations, ground truth is defined in terms of multi-source predictor-specific waveform shapes; performance is therefore evaluated by the time-course similarity between $hat(beta)_i (t)$ and $beta_i^("true")(t)$, using e.g. correlation or RMSE. Or cross-talk matrix will be used: 
 
 $ M_(i j) = upright("corr")(hat(w)_i(t), w_j^(upright("true"))(t)) $
 
