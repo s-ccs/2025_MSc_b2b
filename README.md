@@ -5,6 +5,35 @@
 
 **Year:** *2022*
 
+## Overview of `_research` Folder
+WIP scripts, code will be here, to look for some new updating scripts, keep an eye on here mainly. 
+
+```
+├── _research
+    ├── 3Dvisualization_b2b
+        └── b2b_evaluation_visualization.pdf
+        └── b2b_toy.jl
+    ├── plots
+    ├── Presentations
+    ├── proposal_demo
+        └── b2b_solver_demo.jl
+        └── high_colinear.jl
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--
 ## Project Description
 >provide a short description of the main goals - just copy from the proposal
 
@@ -62,3 +91,4 @@
 ```
 
 \*Instead of having a separate *notebooks* folder, you can also delete it and integrate your notebooks in the scripts folder. However, notebooks should always be marked by adding `nb_` in front of the file name.
+-->
