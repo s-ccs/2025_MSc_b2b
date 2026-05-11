@@ -6,40 +6,15 @@
 
 **Year:** *2026*
 
-## Overview of `_research` Folder
-WIP scripts, code will be here, to look for some new updating scripts, keep an eye on here mainly. 
 
-Recent updates: [`progress_log.md`](./progress_log.md)
 
-```
-├── _research
-    ├── README.md 
-    ├── progress_log.md
-    ├── 3Dvisualization_b2b
-        └── b2b_evaluation_visualization.pdf
-        └── b2b_toy.jl
-    ├── plots
-    ├── Presentations
-    ├── proposal_demo
-        └── b2b_solver_demo.jl
-        └── high_colinear.jl
-    ├── simulation_design
-
-```
+> [!IMPORTANT]
+> Current WIP scripts and simulation prototypes are mainly stored in [`_research/`](./_research/).
+> For recent updates, see [`progress_log.md`](./progress_log.md).  
 
 
 
 
-
-
-
-
-
-
-
-
-
-<!--
 ## Project Description
 >provide a short description of the main goals - just copy from the proposal
 
@@ -97,4 +72,3 @@ Recent updates: [`progress_log.md`](./progress_log.md)
 ```
 
 \*Instead of having a separate *notebooks* folder, you can also delete it and integrate your notebooks in the scripts folder. However, notebooks should always be marked by adding `nb_` in front of the file name.
--->
