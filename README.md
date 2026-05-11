@@ -31,7 +31,8 @@
 4. The selected best-performing pipeline(s) will be applied to the ZuCo dataset, including lexical predictors such as word surprisal (from a pretrained language model), log word frequency, and word length, while controlling for oculomotor covariates.
 
 ## Zotero Library Path
->Please provide the link to the Zotero group here or include a `Bib`-File in the `report` folder
+<!-- > %Please provide the link to the Zotero group here or include a `Bib`-File in the `report` folder -->
+[`report/thesis.bib`](./report/typst-template/refs.bib)
 
 ## Instruction for a new student
 >If a fellow student wants to reproduce all your results. What scripts, in which order, with which data need to be run?
