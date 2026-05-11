@@ -1,6 +1,5 @@
-# **MSc-Thesis:** Combining overlap correction and back-to-back regres-
-sion methods to analyse eye-tracking-EEG co-registra-
-tion data during natural reading
+# **MSc-Thesis:** Combining overlap correction and back-to-back regression methods to analyse eye-tracking-EEG co-registration data during natural reading
+
 **Author:** *Benedikt Ehinger*
 
 **Supervisor(s):** *Supervisor 1*, *Supervisor 2*
