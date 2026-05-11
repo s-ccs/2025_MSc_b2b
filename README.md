@@ -1,9 +1,11 @@
-# **MSc-Thesis:** On the simulation of GIT-Templates for BSc-Theses
+# **MSc-Thesis:** Combining overlap correction and back-to-back regres-
+sion methods to analyse eye-tracking-EEG co-registra-
+tion data during natural reading
 **Author:** *Benedikt Ehinger*
 
 **Supervisor(s):** *Supervisor 1*, *Supervisor 2*
 
-**Year:** *2022*
+**Year:** *2026*
 
 ## Overview of `_research` Folder
 WIP scripts, code will be here, to look for some new updating scripts, keep an eye on here mainly. 
