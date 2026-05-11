@@ -10,7 +10,7 @@
 
 > [!IMPORTANT]
 > Current WIP scripts and simulation prototypes are mainly stored in [`_research/`](./_research/).
-> For recent updates, see [`progress_log.md`](./progress_log.md).  
+> For recent updates, see [`progress_log.md`](./_research/progress_log.md).  
 
 
 
