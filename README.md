@@ -16,7 +16,19 @@
 
 
 ## Project Description
->provide a short description of the main goals - just copy from the proposal
+### Research Questions
+1. In simulations mimicking co-registration data with known ground truth, does combining overlap correction (deconvolution rERP) with B2B improve the disentanglement and recovery of collinear predictors when fixation-related responses overlap in time?
+
+2. When applied to ZuCo, does the best-performing pipeline yield stable and interpretable estimates for lexical predictors (surprisal, frequency, length) while controlling for oculomotor covariates?
+
+### Main goals
+1. A simulation framework with controllable temporal overlap and predictor collinearity is implemented using Unfold toolbox.
+
+2. Analysis pipelines spanning the overlap × collinearity conceptual method map, including baseline decoding, deconvolution rERP decoding, B2B, and rERP + B2B variants, are systematically benchmarked against known ground truth.
+
+3. A fixation-aware surprisal predictor is implemented, distinguishing first fixations and refixations.
+
+4. The selected best-performing pipeline(s) will be applied to the ZuCo dataset, including lexical predictors such as word surprisal (from a pretrained language model), log word frequency, and word length, while controlling for oculomotor covariates.
 
 ## Zotero Library Path
 >Please provide the link to the Zotero group here or include a `Bib`-File in the `report` folder
