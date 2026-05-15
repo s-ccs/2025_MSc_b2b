@@ -16,6 +16,9 @@ begin
 	using LinearAlgebra
 end
 
+# ╔═╡ be4c9d6a-9acf-46aa-8917-219d8d15b517
+WGLMakie.Page()
+
 # ╔═╡ 7def2480-d73b-412b-84c6-30809fc48b01
 begin
 
@@ -36,8 +39,9 @@ begin
 	x₂ = randn(rng, n)
 
 	# correlated but non-causal feature
-	# x₃ = rand(rng,n).>0.5
-	x₃ = 0.8 .* x₁ .+ 0.4 .* randn(rng, n)
+	x₃ = randn(rng,n)
+	#x₃ = 0.8 .* x₁ 
+	# .+ 0.4 .* randn(rng, n) 
 	# x₃ = Float64.((x₁ .+ (rand(rng, n) .< 0.15)) .> 0)
 
 	X_all = hcat(x₁, x₂, x₃)   # 200 × 3
@@ -3003,6 +3007,7 @@ version = "4.1.0+0"
 
 # ╔═╡ Cell order:
 # ╠═0defb5a4-70f8-43e1-a090-a14906731c8c
+# ╠═be4c9d6a-9acf-46aa-8917-219d8d15b517
 # ╠═7def2480-d73b-412b-84c6-30809fc48b01
 # ╠═24d1b9e1-9371-4c4d-b682-9f92eeb7efcd
 # ╠═d18bd04e-4c59-41b9-be3b-fa8d8e02fff4
