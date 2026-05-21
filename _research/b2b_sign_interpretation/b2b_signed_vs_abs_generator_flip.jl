@@ -13,12 +13,72 @@ begin
 	using Unfold
 end
 
+# ╔═╡ 4e8847c1-6a95-42a7-b009-6e385b466b88
+# =================
+# Cross-talk helper functions
+# =================
+
+begin
+    using Statistics
+    using DataFrames
+
+    function match_length(x, n)
+        x = collect(x)
+
+        if length(x) >= n
+            return x[1:n]
+        else
+            return vcat(x, zeros(n - length(x)))
+        end
+    end
+
+    function crosstalk_matrix(result, true_effects; use_abs = false)
+        recovered_names = unique(result.coefname)
+        true_names = collect(keys(true_effects))
+
+        M = zeros(length(recovered_names), length(true_names))
+
+        for (i, rec_name) in enumerate(recovered_names)
+            r = result[result.coefname .== rec_name, :]
+            r = sort(r, :time)
+
+            recovered = collect(r.estimate)
+
+            for (j, true_name) in enumerate(true_names)
+                truth = true_effects[true_name]
+
+                if use_abs
+                    recovered_use = abs.(recovered)
+                    truth_use = abs.(truth)
+                else
+                    recovered_use = recovered
+                    truth_use = truth
+                end
+
+                M[i, j] = cor(recovered_use, truth_use)
+            end
+        end
+
+        df = DataFrame(recovered = string.(recovered_names))
+
+        for (j, true_name) in enumerate(true_names)
+            df[!, Symbol(true_name)] = M[:, j]
+        end
+
+        return df
+    end
+end
+
+
 # ╔═╡ 28932f7b-65dc-4b45-80c0-c04bea678942
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	using InteractiveUtils
 	
 	@less UnfoldSim.predef_eeg(; noiselevel = 0.1, return_epoched = true)
 end
+  ╠═╡ =#
 
 # ╔═╡ c09ea1f1-6ae5-40aa-a162-67eab79367e5
 # ================================
@@ -36,19 +96,33 @@ begin
 	# 2) modeling
 	# --------------------
 	function run_b2b(dat_input, evts_input)
-	f = @formula 0 ~ 1 + condition + continuous 
-	time_wrong = range(0, 0.44, step = 1 / 100)
-	time = range(0, step = 1 / 100, length = size(dat_input, 2))
-	designDict = [Any => (f, time)]
-
-	m = Unfold.fit(UnfoldModel, designDict, evts_input, dat_input; solver = b2b_solver)
-
-	result = coeftable(m)
-	result = result[result.coefname .!= "(Intercept)", :]
-	return result
+		f = @formula 0 ~ 1 + condition + continuous 
+		time_wrong = range(0, 0.44, step = 1 / 100)
+		time = range(0, step = 1 / 100, length = size(dat_input, 2))
+		designDict = [Any => (f, time)]
+	
+		m = Unfold.fit(UnfoldModel, designDict, evts_input, dat_input; solver = b2b_solver)
+	
+		result = coeftable(m)
+		result = result[result.coefname .!= "(Intercept)", :]
+		return (result)
+		# return (; m, result, time)
 	end
+	
+		function make_abs_result(result)
+        r = copy(result)
+        r.estimate = abs.(r.estimate)
+        return r
+    end
+
 end
 
+
+# ╔═╡ 3f906bdb-c03f-47e0-8cff-28740edec0c1
+# ╠═╡ disabled = true
+#=╠═╡
+plot_erp(results_flip_both_abs; axis = (xlabel = "Time [s]", ylabel = "Performance"))
+  ╠═╡ =#
 
 # ╔═╡ 7021cb7c-00f7-4940-a358-6ff063acd8d9
 # ============================
@@ -132,35 +206,120 @@ begin
 	dat_3d_flip_both .+= 0.1 .* rand(size(dat_3d_flip_both)...)
 end
 
-# ╔═╡ 4182c7c6-d6d3-4f0b-80fb-448442d53f86
-# =============
+# ╔═╡ f1e1da0d-856f-454f-843d-9ba6fb276454
+# =================
 # Results
-# =============
-
+# ===============
 begin
-	# -------------------------------
-	# 1) results with signed estimates
-	# --------------------------------
+	# ------------------
+	# signed results
+	# -----------------
 	results_orig_signed = run_b2b(dat_3d, evts)
 	results_flip_cond_signed = run_b2b(dat_3d_flip_cond, evts_flip_cond)
 	results_flip_cont_signed = run_b2b(dat_3d_flip_cont, evts_flip_cont)
 	results_flip_both_signed = run_b2b(dat_3d_flip_both, evts_flip_both)
 
+	# ---------------
+	# abs results
+	# --------------
+	results_orig_abs = make_abs_result(results_orig_signed)
+	results_flip_cond_abs = make_abs_result(results_flip_cond_signed)
+	results_flip_cont_abs = make_abs_result(results_flip_cont_signed)
+	results_flip_both_abs = make_abs_result(results_flip_both_signed)
+end
 
-	# ------------------------------------
-	# 2) results with absolute estimates
-	# -----------------------------------
-	results_orig_abs = copy(results_orig_signed)
-	results_orig_abs.estimate = abs.(results_orig_abs.estimate)
+# ╔═╡ 4e57a1cc-cf7a-41cd-8d6e-94fa39e69afb
+# ============================
+# Ground truth waveform check
+# ============================
 
-	results_flip_cond_abs = copy(results_flip_cond_signed)
-	results_flip_cond_abs.estimate = abs.(results_flip_cond_abs.estimate)
+begin
+    # use a separate prefix `gt_` to avoid overwriting existing variables
 
-	results_flip_cont_abs = copy(results_flip_cont_signed)
-	results_flip_cont_abs.estimate = abs.(results_flip_cont_abs.estimate)
+    gt_n_time = length(unique(results_orig_signed.time))
+    gt_time = collect(range(0, step = 1 / 100, length = gt_n_time))
 
-	results_flip_both_abs = copy(results_flip_both_signed)
-	results_flip_both_abs.estimate = abs.(results_flip_both_abs.estimate)
+    function gt_match_length(x, n)
+        x_vec = collect(x)
+        length(x_vec) >= n ? x_vec[1:n] : vcat(x_vec, zeros(n - length(x_vec)))
+    end
+
+    gt_n170_basis = gt_match_length(UnfoldSim.n170(;), gt_n_time)
+    gt_p300_basis = gt_match_length(UnfoldSim.p300(;), gt_n_time)
+
+    # ---------------------------
+    # condition / N170 examples
+    # ---------------------------
+
+    # original: [5, 3]
+    gt_cond_ref_5_3 = 5 .* gt_n170_basis
+    gt_cond_effect_5_3 = 3 .* gt_n170_basis
+    gt_cond_face_full_5_3 = gt_cond_ref_5_3 .+ gt_cond_effect_5_3
+
+    # contrast flip only: [5, -3]
+    gt_cond_ref_5_neg3 = 5 .* gt_n170_basis
+    gt_cond_effect_5_neg3 = -3 .* gt_n170_basis
+    gt_cond_face_full_5_neg3 = gt_cond_ref_5_neg3 .+ gt_cond_effect_5_neg3
+
+    # full waveform flip: [5, -9]
+    gt_cond_ref_5_neg9 = 5 .* gt_n170_basis
+    gt_cond_effect_5_neg9 = -9 .* gt_n170_basis
+    gt_cond_face_full_5_neg9 = gt_cond_ref_5_neg9 .+ gt_cond_effect_5_neg9
+
+    # ---------------------------
+    # continuous / P300 examples
+    # assuming continuous value = 1
+    # ---------------------------
+
+    gt_cont_full_5_1 = (5 + 1) .* gt_p300_basis
+    gt_cont_full_5_neg1 = (5 - 1) .* gt_p300_basis
+    gt_cont_full_5_neg9 = (5 - 9) .* gt_p300_basis
+
+    # ---------------------------
+    # plot
+    # ---------------------------
+
+    gt_fig = Figure(size = (1300, 700))
+
+    gt_ax1 = Axis(
+        gt_fig[1, 1],
+        title = "Condition / N170 ground truth",
+        xlabel = "Time [s]",
+        ylabel = "Amplitude"
+    )
+
+    lines!(gt_ax1, gt_time, gt_n170_basis, label = "N170 basis")
+    lines!(gt_ax1, gt_time, gt_cond_face_full_5_3, label = "face full: [5, 3] = 8*N170")
+    lines!(gt_ax1, gt_time, gt_cond_face_full_5_neg3, label = "face full: [5, -3] = 2*N170")
+    lines!(gt_ax1, gt_time, gt_cond_face_full_5_neg9, label = "face full: [5, -9] = -4*N170")
+    axislegend(gt_ax1)
+
+    gt_ax2 = Axis(
+        gt_fig[1, 2],
+        title = "Condition effect / contrast only",
+        xlabel = "Time [s]",
+        ylabel = "Amplitude"
+    )
+
+    lines!(gt_ax2, gt_time, gt_cond_effect_5_3, label = "condition effect: +3*N170")
+    lines!(gt_ax2, gt_time, gt_cond_effect_5_neg3, label = "condition effect: -3*N170")
+    lines!(gt_ax2, gt_time, gt_cond_effect_5_neg9, label = "condition effect: -9*N170")
+    axislegend(gt_ax2)
+
+    gt_ax3 = Axis(
+        gt_fig[2, 1],
+        title = "Continuous / P300 full waveform, assuming continuous = 1",
+        xlabel = "Time [s]",
+        ylabel = "Amplitude"
+    )
+
+    lines!(gt_ax3, gt_time, gt_p300_basis, label = "P300 basis")
+    lines!(gt_ax3, gt_time, gt_cont_full_5_1, label = "[5, 1] = 6*P300")
+    lines!(gt_ax3, gt_time, gt_cont_full_5_neg1, label = "[5, -1] = 4*P300")
+    lines!(gt_ax3, gt_time, gt_cont_full_5_neg9, label = "[5, -9] = -4*P300")
+    axislegend(gt_ax3)
+
+    gt_fig
 end
 
 # ╔═╡ a0cc1406-ccaa-475b-ba30-49505f8811ea
@@ -210,46 +369,212 @@ begin
 		xlabel = "Time [s]",
 		ylabel = "Performance"
 	)
-		
-		
-		
+
+	ax5 = Axis(fig[3, 1],
+			  title = "Flipped condition: signed",
+			  xlabel = "Times [s]",
+			  ylabel = "Performance"
+	)
+
+	ax6 = Axis(fig[3, 2],
+			  title = "Flipped condition: abs",
+			  xlabel = "Times [s]",
+			  ylabel = "Performance"
+	)
+
+	ax7 = Axis(fig[4, 1],
+			  title = "Flipped continuous: singed",
+			  xlabel = "Times [s]",
+			  ylabel = "Performance"
+	)		
+
+
+	ax8 = Axis(fig[4, 2],
+			  title = "Flipped continuous: abs",
+			  xlabel = "Times [s]",
+			  ylabel = "Performance"
+	)		
+	
 	plot_b2b_into_axis!(ax1, results_orig_signed)
 	plot_b2b_into_axis!(ax2, results_orig_abs)
 		
 
 	plot_b2b_into_axis!(ax3, results_flip_both_signed)
 	plot_b2b_into_axis!(ax4, results_flip_both_abs)
-		
+
+	
+	plot_b2b_into_axis!(ax5, results_flip_cond_signed)
+	plot_b2b_into_axis!(ax6, results_flip_cond_abs)
+
+	plot_b2b_into_axis!(ax7, results_flip_cont_signed)
+	plot_b2b_into_axis!(ax8, results_flip_cont_abs)
+	
 		
 	axislegend(ax1)
 	axislegend(ax2)
 	axislegend(ax3)
 	axislegend(ax4)
+	axislegend(ax5)
+	axislegend(ax6)
+	axislegend(ax7)
+	axislegend(ax8)
 	
 	
-	linkyaxes!(ax1, ax2, ax3, ax4)
+	linkyaxes!(ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8)
 	fig
 		
-	save("b2b_signs_comparison.svg", fig)
+	# save("b2b_signs_comparison_8_panles).svg", fig)
 end
 
-# ╔═╡ 642b386c-73cf-4496-a15a-6d8eda50a464
+# ╔═╡ a898db7c-6f5b-4319-8ec2-79d57b6fc781
 pwd()
 
 # ╔═╡ 9e703fe4-5d85-4e19-bb3b-14fe8131e142
+# ╠═╡ disabled = true
+#=╠═╡
 plot_erp(results_flip_cont_signed; axis = (xlabel = "Time [s]", ylabel = "Performance"))
+  ╠═╡ =#
 
 # ╔═╡ 9da4f5f6-c833-4fff-a38f-0efac0ffb2b9
+# ╠═╡ disabled = true
+#=╠═╡
 plot_erp(results_flip_cont_abs; axis = (xlabel = "Time [s]", ylabel = "Performance"))
+  ╠═╡ =#
 
 # ╔═╡ 55903c29-cc48-4800-863a-e34cc38fd30c
+function signed_vs_abs_alignment(result, coefname, truth)
+    r = result[result.coefname .== coefname, :]
+    r = sort(r, :time)
 
+    est = collect(r.estimate)
+
+    return (
+        signed_alignment = cor(est, truth),
+        abs_alignment = cor(abs.(est), abs.(truth)),
+        min_est = minimum(est),
+        max_est = maximum(est),
+        prop_negative = sum(est .< 0) / length(est)
+    )
+end
+
+# ╔═╡ 0aa3e9ce-cb7d-4ea1-8e12-d46e44a65697
+# ======================
+# Ground truth waveforms
+# ======================
+
+begin
+    n_time = length(unique(results_orig_signed.time))
+
+    n1 = match_length(UnfoldSim.n170(;), n_time)
+    p3 = match_length(UnfoldSim.p300(;), n_time)
+
+    # original generator
+    truth_orig = Dict(
+        "true_condition" => 3 .* n1,
+        "true_continuous" => 1 .* p3
+    )
+
+    # flipped condition generator
+    truth_flip_cond = Dict(
+        "true_condition" => -3 .* n1,
+        "true_continuous" => 1 .* p3
+    )
+
+    # flipped continuous generator
+    truth_flip_cont = Dict(
+        "true_condition" => 3 .* n1,
+        "true_continuous" => -1 .* p3
+    )
+
+    # flipped both generator
+    truth_flip_both = Dict(
+        "true_condition" => -3 .* n1,
+        "true_continuous" => -1 .* p3
+    )
+end
+
+# ╔═╡ 44bf4472-fdb6-4ba4-8d5f-8e6a81b91aa0
+minimum(results_flip_cont_signed.estimate)
+
+# ╔═╡ 53f68f04-a47c-4b82-8b40-d947d6ddf127
+maximum(results_flip_cont_signed.estimate)
+
+# ╔═╡ 5e32bdff-a6e0-4be1-98f4-b9509634f606
+signed_vs_abs_alignment(
+    results_orig_signed,
+    "condition: face",
+    truth_orig["true_condition"]
+)
+
+# [5,3], [5,1]
+
+# ╔═╡ a3b9f708-e29f-4b29-a869-04091ffa1f4a
+signed_vs_abs_alignment(
+    results_flip_cond_signed,
+    "condition: face",
+    truth_flip_cond["true_condition"]
+)
+# [5, -9], [5, 1]
+
+# ╔═╡ 8c7d27fb-44ef-4205-a768-1b15878cf3de
+signed_vs_abs_alignment(
+    results_orig_signed,
+    "continuous",
+    truth_orig["true_continuous"]
+) 
+# [5,3], [5,1]
+
+# ╔═╡ fc708cbc-1f0d-4d3b-a995-e268edb0860c
+signed_vs_abs_alignment(
+    results_flip_cont_signed,
+    "continuous",
+    truth_flip_cont["true_continuous"]
+)
+# [5, 3], [5, -1]
+
+# ╔═╡ 479c6df6-0d9d-4ca5-9f1d-01862398543a
+# =================
+# Cross-talk matrices
+# =================
+
+begin
+    # signed cross-talk
+    ct_orig_signed = crosstalk_matrix(results_orig_signed, truth_orig; use_abs = false)
+    ct_flip_cond_signed = crosstalk_matrix(results_flip_cond_signed, truth_flip_cond; use_abs = false)
+    ct_flip_cont_signed = crosstalk_matrix(results_flip_cont_signed, truth_flip_cont; use_abs = false)
+    ct_flip_both_signed = crosstalk_matrix(results_flip_both_signed, truth_flip_both; use_abs = false)
+
+    # magnitude / abs cross-talk
+    ct_orig_abs = crosstalk_matrix(results_orig_signed, truth_orig; use_abs = true)
+    ct_flip_cond_abs = crosstalk_matrix(results_flip_cond_signed, truth_flip_cond; use_abs = true)
+    ct_flip_cont_abs = crosstalk_matrix(results_flip_cont_signed, truth_flip_cont; use_abs = true)
+    ct_flip_both_abs = crosstalk_matrix(results_flip_both_signed, truth_flip_both; use_abs = true)
+end
+
+# ╔═╡ c49c574a-1409-4264-8c61-5a567c607140
+ct_orig_signed
+
+# ╔═╡ 3c3ad25e-1ff0-4042-b6ec-c8fcb85208f0
+ct_orig_abs
+
+# ╔═╡ 243d0cf7-395a-4bcd-aac0-657a12fbf0c7
+ct_flip_both_signed
+
+# ╔═╡ 1a5cce0f-325a-4ef7-85ef-dcfc8e0291eb
+ct_flip_both_abs
+
+# ╔═╡ 60598e3d-0e31-4572-b06a-2bfe688ce42e
+ct_flip_cond_signed
+
+# ╔═╡ 04a3f3a7-28a3-44c4-a38b-6b6a426031d1
+ct_flip_cond_abs
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
-InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Unfold = "181c99d8-e21b-4ff3-b70b-c233eddec679"
 UnfoldDecode = "ec0f67a1-ae9f-4687-b20b-bd39d33e72da"
 UnfoldMakie = "69a5ce3b-64fb-4f22-ae69-36dd4416af2a"
@@ -257,6 +582,7 @@ UnfoldSim = "ed8ae6d2-84d3-44c6-ab46-0baf21700804"
 
 [compat]
 CairoMakie = "~0.13.10"
+DataFrames = "~1.8.1"
 Unfold = "~0.8.8"
 UnfoldDecode = "~0.1.1"
 UnfoldMakie = "~0.5.21"
@@ -269,7 +595,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.12.3"
 manifest_format = "2.0"
-project_hash = "eb8543327b0de07a009fa4daeccdf7f120faaf21"
+project_hash = "d1e2bc26527743b37ef6b6e27eb1dee2e4ea32df"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -3292,12 +3618,29 @@ version = "4.1.0+0"
 # ╠═ea5a1c74-4ea7-11f1-9c5e-591249c851f0
 # ╠═28932f7b-65dc-4b45-80c0-c04bea678942
 # ╠═c09ea1f1-6ae5-40aa-a162-67eab79367e5
+# ╠═3f906bdb-c03f-47e0-8cff-28740edec0c1
 # ╠═7021cb7c-00f7-4940-a358-6ff063acd8d9
-# ╠═4182c7c6-d6d3-4f0b-80fb-448442d53f86
+# ╠═4e57a1cc-cf7a-41cd-8d6e-94fa39e69afb
+# ╠═f1e1da0d-856f-454f-843d-9ba6fb276454
 # ╠═a0cc1406-ccaa-475b-ba30-49505f8811ea
-# ╠═642b386c-73cf-4496-a15a-6d8eda50a464
+# ╠═a898db7c-6f5b-4319-8ec2-79d57b6fc781
 # ╠═9e703fe4-5d85-4e19-bb3b-14fe8131e142
 # ╠═9da4f5f6-c833-4fff-a38f-0efac0ffb2b9
+# ╠═4e8847c1-6a95-42a7-b009-6e385b466b88
 # ╠═55903c29-cc48-4800-863a-e34cc38fd30c
+# ╠═0aa3e9ce-cb7d-4ea1-8e12-d46e44a65697
+# ╠═44bf4472-fdb6-4ba4-8d5f-8e6a81b91aa0
+# ╠═53f68f04-a47c-4b82-8b40-d947d6ddf127
+# ╠═5e32bdff-a6e0-4be1-98f4-b9509634f606
+# ╠═a3b9f708-e29f-4b29-a869-04091ffa1f4a
+# ╠═8c7d27fb-44ef-4205-a768-1b15878cf3de
+# ╠═fc708cbc-1f0d-4d3b-a995-e268edb0860c
+# ╠═479c6df6-0d9d-4ca5-9f1d-01862398543a
+# ╠═c49c574a-1409-4264-8c61-5a567c607140
+# ╠═3c3ad25e-1ff0-4042-b6ec-c8fcb85208f0
+# ╠═243d0cf7-395a-4bcd-aac0-657a12fbf0c7
+# ╠═1a5cce0f-325a-4ef7-85ef-dcfc8e0291eb
+# ╠═60598e3d-0e31-4572-b06a-2bfe688ce42e
+# ╠═04a3f3a7-28a3-44c4-a38b-6b6a426031d1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
