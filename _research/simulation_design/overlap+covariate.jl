@@ -354,6 +354,37 @@ begin
 	fig_condition
 end
 
+# ╔═╡ 513e3642-0dc5-47df-9cc1-c6583fe49d2b
+# ==========================================
+# 12) visualize simulated P300 continuous effect
+# ==========================================
+
+begin
+	q25 = quantile(evts_e.continuous, 0.25)
+	q75 = quantile(evts_e.continuous, 0.75)
+
+	low_ix = evts_e.continuous .<= q25
+	high_ix = evts_e.continuous .>= q75
+
+	low_avg = vec(mean(dat_e[1, :, low_ix], dims = 2))
+	high_avg = vec(mean(dat_e[1, :, high_ix], dims = 2))
+
+	fig_continuous = Figure(size = (650, 400))
+
+	ax_continuous = Axis(
+		fig_continuous[1, 1],
+		xlabel = "Time (s)",
+		ylabel = "Amplitude",
+		title = "Simulated raw epochs: continuous covariate effect",
+	)
+
+	lines!(ax_continuous, times, low_avg, label = "low continuous")
+	lines!(ax_continuous, times, high_avg, label = "high continuous")
+	axislegend(ax_continuous)
+
+	fig_continuous
+end
+
 # ╔═╡ e2dfc8ea-9447-4ddc-b20b-fd9251727c43
 # =============
 # 13) sanity check table
@@ -400,37 +431,6 @@ begin
 	)
 end
   ╠═╡ =#
-
-# ╔═╡ 513e3642-0dc5-47df-9cc1-c6583fe49d2b
-# ==========================================
-# 12) visualize simulated P300 continuous effect
-# ==========================================
-
-begin
-	q25 = quantile(evts_e.continuous, 0.25)
-	q75 = quantile(evts_e.continuous, 0.75)
-
-	low_ix = evts_e.continuous .<= q25
-	high_ix = evts_e.continuous .>= q75
-
-	low_avg = vec(mean(dat_e[1, :, low_ix], dims = 2))
-	high_avg = vec(mean(dat_e[1, :, high_ix], dims = 2))
-
-	fig_continuous = Figure(size = (650, 400))
-
-	ax_continuous = Axis(
-		fig_continuous[1, 1],
-		xlabel = "Time (s)",
-		ylabel = "Amplitude",
-		title = "Simulated raw epochs: continuous covariate effect",
-	)
-
-	lines!(ax_continuous, times, low_avg, label = "low continuous")
-	lines!(ax_continuous, times, high_avg, label = "high continuous")
-	axislegend(ax_continuous)
-
-	fig_continuous
-end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """

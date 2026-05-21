@@ -230,122 +230,6 @@ Use it to generate the design matrix.
 # β shape = (1, predictors × timepoints) (fir)
 # coeftable(uf): “a tabel for all β，for better analysing and plotting”
 
-# ╔═╡ 6a37b67e-c803-4acf-aa5b-702e56be0130
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-    # 只放 N170 component
-	designDict_fir = [Any => (fo, UnfoldDecode.Unfold.firbasis(;τ=[-.1,0.5],sfreq=sfreq))]
-    rng_n1 = MersenneTwister(1)
-    components_n1 = [n1]
-
-    dat_n1, evts_n1 = simulate(rng_n1, design, components_n1, o, noise)
-
-    # 跟你 pipeline 一样：epoch + 多通道 + B2B FIR
-    dat_n1_e, times_n1 = UnfoldDecode.Unfold.epoch(dat_n1, evts_n1, [-0.1, 0.5], sfreq)
-    evts_n1_e, dat_n1_e = UnfoldDecode.Unfold.drop_missing_epochs(evts_n1, dat_n1_e)
-
-    dat_n1_e = repeat(dat_n1_e, 20, 1, 1)
-    dat_n1   = permutedims(repeat(dat_n1, 1, 20), [2, 1])
-
-    dat_n1_e .+= 0.1 .* rand(size(dat_n1_e)...)
-    dat_n1   .+= 0.1 .* rand(size(dat_n1)...)
-
-    m_n1_fir = UnfoldDecode.Unfold.fit(
-        UnfoldDecode.UnfoldModel,
-        designDict_fir,
-        evts_n1,
-        dat_n1;
-        solver = b2b_solver,
-    )
-end
-
-  ╠═╡ =#
-
-# ╔═╡ c1a461ab-1272-4bf2-b78c-1e33cd8b6e07
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-    
-	rng_p3 = MersenneTwister(2)
-    components_p3 = [p3]
-
-    dat_p3, evts_p3 = simulate(rng_p3, design, components_p3, o, noise)
-
-    dat_p3_e, times_p3 = UnfoldDecode.Unfold.epoch(dat_p3, evts_p3, [-0.1, 0.5], sfreq)
-    evts_p3_e, dat_p3_e = UnfoldDecode.Unfold.drop_missing_epochs(evts_p3, dat_p3_e)
-
-    dat_p3_e = repeat(dat_p3_e, 20, 1, 1)
-    dat_p3   = permutedims(repeat(dat_p3, 1, 20), [2, 1])
-
-    dat_p3_e .+= 0.1 .* rand(size(dat_p3_e)...)
-    dat_p3   .+= 0.1 .* rand(size(dat_p3)...)
-
-    m_p3_fir = UnfoldDecode.Unfold.fit(
-        UnfoldDecode.UnfoldModel,
-        designDict_fir,
-        evts_p3,
-        dat_p3;
-        solver = b2b_solver,
-    )
-end
-
-  ╠═╡ =#
-
-# ╔═╡ 2612fb5a-95fd-41b7-9d7f-4834bc1c27be
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-    using Statistics
-
-    # 只拿 FIR 那一栏
-    face_fir = results[
-        (results.type .== "firbasis") .& (results.coefname .== "condition: face"),
-        :
-    ]
-    cont_fir = results[
-        (results.type .== "firbasis") .& (results.coefname .== "continuous"),
-        :
-    ]
-
-    # 看看时间轴是不是对齐
-    println("time equal?  ", all(face_fir.time .== cont_fir.time))
-
-    # 看看数值差最大多少
-    diff_max = maximum(abs.(face_fir.estimate .- cont_fir.estimate))
-    println("max |difference| = ", diff_max)
-
-    diff_max
-end
-
-  ╠═╡ =#
-
-# ╔═╡ 13154e8e-8e6d-418a-9579-a12992241653
-#=╠═╡
-maximum(face_fir.estimate), maximum(cont_fir.estimate)
-
-  ╠═╡ =#
-
-# ╔═╡ 9273c4c2-e27e-4288-b7f1-6853f3304bce
-#=╠═╡
-begin
-
-    # 1. 峰值时间点
-    idx_face = argmax(face_fir.estimate)
-    idx_cont = argmax(cont_fir.estimate)
-    println("face peak at: ", face_fir.time[idx_face])
-    println("cont peak at: ", cont_fir.time[idx_cont])
-
-    # 2. 峰值大小
-    println("face max S = ", face_fir.estimate[idx_face])
-    println("cont max S = ", cont_fir.estimate[idx_cont])
-
-    # 3. 相关系数（形状相似度）
-    println("correlation = ", cor(face_fir.estimate, cont_fir.estimate))
-end
-
-  ╠═╡ =#
-
 # ╔═╡ be9f733b-0089-4fe2-9bf4-21eb8fa31574
 #WGLMakie.Page() #run this command if plots dont show up, then rerun the plots
 
@@ -457,6 +341,122 @@ end;
 
 # ╔═╡ 72c66d70-ecb7-4edb-9cd2-13f4936ed5ab
 plot_erp(results;mapping=(;col=:type))
+
+# ╔═╡ 2612fb5a-95fd-41b7-9d7f-4834bc1c27be
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+    using Statistics
+
+    # 只拿 FIR 那一栏
+    face_fir = results[
+        (results.type .== "firbasis") .& (results.coefname .== "condition: face"),
+        :
+    ]
+    cont_fir = results[
+        (results.type .== "firbasis") .& (results.coefname .== "continuous"),
+        :
+    ]
+
+    # 看看时间轴是不是对齐
+    println("time equal?  ", all(face_fir.time .== cont_fir.time))
+
+    # 看看数值差最大多少
+    diff_max = maximum(abs.(face_fir.estimate .- cont_fir.estimate))
+    println("max |difference| = ", diff_max)
+
+    diff_max
+end
+
+  ╠═╡ =#
+
+# ╔═╡ 13154e8e-8e6d-418a-9579-a12992241653
+#=╠═╡
+maximum(face_fir.estimate), maximum(cont_fir.estimate)
+
+  ╠═╡ =#
+
+# ╔═╡ 9273c4c2-e27e-4288-b7f1-6853f3304bce
+#=╠═╡
+begin
+
+    # 1. 峰值时间点
+    idx_face = argmax(face_fir.estimate)
+    idx_cont = argmax(cont_fir.estimate)
+    println("face peak at: ", face_fir.time[idx_face])
+    println("cont peak at: ", cont_fir.time[idx_cont])
+
+    # 2. 峰值大小
+    println("face max S = ", face_fir.estimate[idx_face])
+    println("cont max S = ", cont_fir.estimate[idx_cont])
+
+    # 3. 相关系数（形状相似度）
+    println("correlation = ", cor(face_fir.estimate, cont_fir.estimate))
+end
+
+  ╠═╡ =#
+
+# ╔═╡ 6a37b67e-c803-4acf-aa5b-702e56be0130
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+    # 只放 N170 component
+	designDict_fir = [Any => (fo, UnfoldDecode.Unfold.firbasis(;τ=[-.1,0.5],sfreq=sfreq))]
+    rng_n1 = MersenneTwister(1)
+    components_n1 = [n1]
+
+    dat_n1, evts_n1 = simulate(rng_n1, design, components_n1, o, noise)
+
+    # 跟你 pipeline 一样：epoch + 多通道 + B2B FIR
+    dat_n1_e, times_n1 = UnfoldDecode.Unfold.epoch(dat_n1, evts_n1, [-0.1, 0.5], sfreq)
+    evts_n1_e, dat_n1_e = UnfoldDecode.Unfold.drop_missing_epochs(evts_n1, dat_n1_e)
+
+    dat_n1_e = repeat(dat_n1_e, 20, 1, 1)
+    dat_n1   = permutedims(repeat(dat_n1, 1, 20), [2, 1])
+
+    dat_n1_e .+= 0.1 .* rand(size(dat_n1_e)...)
+    dat_n1   .+= 0.1 .* rand(size(dat_n1)...)
+
+    m_n1_fir = UnfoldDecode.Unfold.fit(
+        UnfoldDecode.UnfoldModel,
+        designDict_fir,
+        evts_n1,
+        dat_n1;
+        solver = b2b_solver,
+    )
+end
+
+  ╠═╡ =#
+
+# ╔═╡ c1a461ab-1272-4bf2-b78c-1e33cd8b6e07
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+    
+	rng_p3 = MersenneTwister(2)
+    components_p3 = [p3]
+
+    dat_p3, evts_p3 = simulate(rng_p3, design, components_p3, o, noise)
+
+    dat_p3_e, times_p3 = UnfoldDecode.Unfold.epoch(dat_p3, evts_p3, [-0.1, 0.5], sfreq)
+    evts_p3_e, dat_p3_e = UnfoldDecode.Unfold.drop_missing_epochs(evts_p3, dat_p3_e)
+
+    dat_p3_e = repeat(dat_p3_e, 20, 1, 1)
+    dat_p3   = permutedims(repeat(dat_p3, 1, 20), [2, 1])
+
+    dat_p3_e .+= 0.1 .* rand(size(dat_p3_e)...)
+    dat_p3   .+= 0.1 .* rand(size(dat_p3)...)
+
+    m_p3_fir = UnfoldDecode.Unfold.fit(
+        UnfoldDecode.UnfoldModel,
+        designDict_fir,
+        evts_p3,
+        dat_p3;
+        solver = b2b_solver,
+    )
+end
+
+  ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
