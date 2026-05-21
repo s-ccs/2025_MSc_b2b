@@ -1,6 +1,6 @@
 # Progress Log
 
-## 2026-05-12
+## 2026-05-12 (week 1)
 
 ### Added
 - Created `simulation_design/` for current simulation prototypes.
@@ -31,4 +31,31 @@
 - ❓: B2B has no sign? flip the generator to negative to see whether the b2b estimate coefficents turn negative also.
 - refer to 'b2b_sign_interpretation/' : My current interpretation is that B2B estimates are numerically signed, so I would not simply say that B2B has no sign. 
  
+
+
+## 2026-05-19 (week 2)
+
+### Added 
+- reproducible simulation workflow (WIP)
+- overview
+```
+src/
+├── B2BSim.jl          # main entry/ module files
+├── SimConfig.jl       # simulation configuration
+├── EventDesign.jl     # condition / continuous / collinearity design
+├── OnsetModels.jl     # overlap / onset distribution
+├── Components.jl      # N170 / P300 ground-truth components
+├── Pipelines.jl       # simulate -> epoch -> fit B2B piplines
+├── Metrics.jl         # recovery, magnitude leakage, correlation 
+└── IOUtils.jl         # save csv / IO / path 
+
+scripts/
+├── run_single_case.jl # single setting，debug use
+├── run_grid.jl        # multiple overlap × covariate × seed
+├── summarize_grid.jl  # summarize results
+└── make_figures.jl    # plotting from results
+```
+
+### Meeting
+- Skipped, stella;s sick
 
