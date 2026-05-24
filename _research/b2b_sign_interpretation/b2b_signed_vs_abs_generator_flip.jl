@@ -10,6 +10,7 @@ begin
 	using UnfoldSim
 	using UnfoldMakie
 	using CairoMakie
+	using Random
 	using Unfold
 end
 
@@ -228,101 +229,7 @@ begin
 	results_flip_both_abs = make_abs_result(results_flip_both_signed)
 end
 
-# ╔═╡ 4e57a1cc-cf7a-41cd-8d6e-94fa39e69afb
-# ============================
-# Ground truth waveform check
-# ============================
-
-begin
-    # use a separate prefix `gt_` to avoid overwriting existing variables
-
-    gt_n_time = length(unique(results_orig_signed.time))
-    gt_time = collect(range(0, step = 1 / 100, length = gt_n_time))
-
-    function gt_match_length(x, n)
-        x_vec = collect(x)
-        length(x_vec) >= n ? x_vec[1:n] : vcat(x_vec, zeros(n - length(x_vec)))
-    end
-
-    gt_n170_basis = gt_match_length(UnfoldSim.n170(;), gt_n_time)
-    gt_p300_basis = gt_match_length(UnfoldSim.p300(;), gt_n_time)
-
-    # ---------------------------
-    # condition / N170 examples
-    # ---------------------------
-
-    # original: [5, 3]
-    gt_cond_ref_5_3 = 5 .* gt_n170_basis
-    gt_cond_effect_5_3 = 3 .* gt_n170_basis
-    gt_cond_face_full_5_3 = gt_cond_ref_5_3 .+ gt_cond_effect_5_3
-
-    # contrast flip only: [5, -3]
-    gt_cond_ref_5_neg3 = 5 .* gt_n170_basis
-    gt_cond_effect_5_neg3 = -3 .* gt_n170_basis
-    gt_cond_face_full_5_neg3 = gt_cond_ref_5_neg3 .+ gt_cond_effect_5_neg3
-
-    # full waveform flip: [5, -9]
-    gt_cond_ref_5_neg9 = 5 .* gt_n170_basis
-    gt_cond_effect_5_neg9 = -9 .* gt_n170_basis
-    gt_cond_face_full_5_neg9 = gt_cond_ref_5_neg9 .+ gt_cond_effect_5_neg9
-
-    # ---------------------------
-    # continuous / P300 examples
-    # assuming continuous value = 1
-    # ---------------------------
-
-    gt_cont_full_5_1 = (5 + 1) .* gt_p300_basis
-    gt_cont_full_5_neg1 = (5 - 1) .* gt_p300_basis
-    gt_cont_full_5_neg9 = (5 - 9) .* gt_p300_basis
-
-    # ---------------------------
-    # plot
-    # ---------------------------
-
-    gt_fig = Figure(size = (1300, 700))
-
-    gt_ax1 = Axis(
-        gt_fig[1, 1],
-        title = "Condition / N170 ground truth",
-        xlabel = "Time [s]",
-        ylabel = "Amplitude"
-    )
-
-    lines!(gt_ax1, gt_time, gt_n170_basis, label = "N170 basis")
-    lines!(gt_ax1, gt_time, gt_cond_face_full_5_3, label = "face full: [5, 3] = 8*N170")
-    lines!(gt_ax1, gt_time, gt_cond_face_full_5_neg3, label = "face full: [5, -3] = 2*N170")
-    lines!(gt_ax1, gt_time, gt_cond_face_full_5_neg9, label = "face full: [5, -9] = -4*N170")
-    axislegend(gt_ax1)
-
-    gt_ax2 = Axis(
-        gt_fig[1, 2],
-        title = "Condition effect / contrast only",
-        xlabel = "Time [s]",
-        ylabel = "Amplitude"
-    )
-
-    lines!(gt_ax2, gt_time, gt_cond_effect_5_3, label = "condition effect: +3*N170")
-    lines!(gt_ax2, gt_time, gt_cond_effect_5_neg3, label = "condition effect: -3*N170")
-    lines!(gt_ax2, gt_time, gt_cond_effect_5_neg9, label = "condition effect: -9*N170")
-    axislegend(gt_ax2)
-
-    gt_ax3 = Axis(
-        gt_fig[2, 1],
-        title = "Continuous / P300 full waveform, assuming continuous = 1",
-        xlabel = "Time [s]",
-        ylabel = "Amplitude"
-    )
-
-    lines!(gt_ax3, gt_time, gt_p300_basis, label = "P300 basis")
-    lines!(gt_ax3, gt_time, gt_cont_full_5_1, label = "[5, 1] = 6*P300")
-    lines!(gt_ax3, gt_time, gt_cont_full_5_neg1, label = "[5, -1] = 4*P300")
-    lines!(gt_ax3, gt_time, gt_cont_full_5_neg9, label = "[5, -9] = -4*P300")
-    axislegend(gt_ax3)
-
-    gt_fig
-end
-
-# ╔═╡ a0cc1406-ccaa-475b-ba30-49505f8811ea
+# ╔═╡ d3008127-c8ce-4e95-93f2-7c3b56ab0fc7
 # ================
 # Plots
 # =================
@@ -424,6 +331,100 @@ begin
 	fig
 		
 	# save("b2b_signs_comparison_8_panles).svg", fig)
+end
+
+# ╔═╡ 4e57a1cc-cf7a-41cd-8d6e-94fa39e69afb
+# ============================
+# Ground truth waveform check
+# ============================
+
+begin
+    # use a separate prefix `gt_` to avoid overwriting existing variables
+
+    gt_n_time = length(unique(results_orig_signed.time))
+    gt_time = collect(range(0, step = 1 / 100, length = gt_n_time))
+
+    function gt_match_length(x, n)
+        x_vec = collect(x)
+        length(x_vec) >= n ? x_vec[1:n] : vcat(x_vec, zeros(n - length(x_vec)))
+    end
+
+    gt_n170_basis = gt_match_length(UnfoldSim.n170(;), gt_n_time)
+    gt_p300_basis = gt_match_length(UnfoldSim.p300(;), gt_n_time)
+
+    # ---------------------------
+    # condition / N170 examples
+    # ---------------------------
+
+    # original: [5, 3]
+    gt_cond_ref_5_3 = 5 .* gt_n170_basis
+    gt_cond_effect_5_3 = 3 .* gt_n170_basis
+    gt_cond_face_full_5_3 = gt_cond_ref_5_3 .+ gt_cond_effect_5_3
+
+    # contrast flip only: [5, -3]
+    gt_cond_ref_5_neg3 = 5 .* gt_n170_basis
+    gt_cond_effect_5_neg3 = -3 .* gt_n170_basis
+    gt_cond_face_full_5_neg3 = gt_cond_ref_5_neg3 .+ gt_cond_effect_5_neg3
+
+    # full waveform flip: [5, -9]
+    gt_cond_ref_5_neg9 = 5 .* gt_n170_basis
+    gt_cond_effect_5_neg9 = -9 .* gt_n170_basis
+    gt_cond_face_full_5_neg9 = gt_cond_ref_5_neg9 .+ gt_cond_effect_5_neg9
+
+    # ---------------------------
+    # continuous / P300 examples
+    # assuming continuous value = 1
+    # ---------------------------
+
+    gt_cont_full_5_1 = (5 + 1) .* gt_p300_basis
+    gt_cont_full_5_neg1 = (5 - 1) .* gt_p300_basis
+    gt_cont_full_5_neg9 = (5 - 9) .* gt_p300_basis
+
+    # ---------------------------
+    # plot
+    # ---------------------------
+
+    gt_fig = Figure(size = (1300, 700))
+
+    gt_ax1 = Axis(
+        gt_fig[1, 1],
+        title = "Condition / N170 ground truth",
+        xlabel = "Time [s]",
+        ylabel = "Amplitude"
+    )
+
+    lines!(gt_ax1, gt_time, gt_n170_basis, label = "N170 basis")
+    lines!(gt_ax1, gt_time, gt_cond_face_full_5_3, label = "face full: [5, 3] = 8*N170")
+    lines!(gt_ax1, gt_time, gt_cond_face_full_5_neg3, label = "face full: [5, -3] = 2*N170")
+    lines!(gt_ax1, gt_time, gt_cond_face_full_5_neg9, label = "face full: [5, -9] = -4*N170")
+    axislegend(gt_ax1)
+
+    gt_ax2 = Axis(
+        gt_fig[1, 2],
+        title = "Condition effect / contrast only",
+        xlabel = "Time [s]",
+        ylabel = "Amplitude"
+    )
+
+    lines!(gt_ax2, gt_time, gt_cond_effect_5_3, label = "condition effect: +3*N170")
+    lines!(gt_ax2, gt_time, gt_cond_effect_5_neg3, label = "condition effect: -3*N170")
+    lines!(gt_ax2, gt_time, gt_cond_effect_5_neg9, label = "condition effect: -9*N170")
+    axislegend(gt_ax2)
+
+    gt_ax3 = Axis(
+        gt_fig[2, 1],
+        title = "Continuous / P300 full waveform, assuming continuous = 1",
+        xlabel = "Time [s]",
+        ylabel = "Amplitude"
+    )
+
+    lines!(gt_ax3, gt_time, gt_p300_basis, label = "P300 basis")
+    lines!(gt_ax3, gt_time, gt_cont_full_5_1, label = "[5, 1] = 6*P300")
+    lines!(gt_ax3, gt_time, gt_cont_full_5_neg1, label = "[5, -1] = 4*P300")
+    lines!(gt_ax3, gt_time, gt_cont_full_5_neg9, label = "[5, -9] = -4*P300")
+    axislegend(gt_ax3)
+
+    gt_fig
 end
 
 # ╔═╡ a898db7c-6f5b-4319-8ec2-79d57b6fc781
@@ -569,11 +570,522 @@ ct_flip_cond_signed
 # ╔═╡ 04a3f3a7-28a3-44c4-a38b-6b6a426031d1
 ct_flip_cond_abs
 
+# ╔═╡ 51adbea4-6079-409c-b710-2f329d68bd7b
+# ================================
+# Clean B2B fitting function
+# ================================
+
+begin
+    clean_b2b_solver = (x, y) -> UnfoldDecode.solver_b2b(
+        x, y;
+        cross_val_reps = 5
+    )
+
+    function clean_run_b2b(clean_dat_input, clean_evts_input)
+        clean_formula = @formula 0 ~ 1 + condition + continuous
+
+        clean_time = range(
+            0,
+            step = 1 / 100,
+            length = size(clean_dat_input, 2)
+        )
+
+        clean_designDict = [Any => (clean_formula, clean_time)]
+
+        clean_model = Unfold.fit(
+            UnfoldModel,
+            clean_designDict,
+            clean_evts_input,
+            clean_dat_input;
+            solver = clean_b2b_solver
+        )
+
+        clean_result_raw = coeftable(clean_model)
+
+        clean_result = clean_result_raw[
+            clean_result_raw.coefname .!= "(Intercept)",
+            :
+        ]
+
+        return (; model = clean_model, result = clean_result, result_raw = clean_result_raw, time = clean_time)
+    end
+
+    function clean_make_abs_result(clean_result)
+        clean_r = copy(clean_result)
+        clean_r.estimate = abs.(clean_r.estimate)
+        return clean_r
+    end
+end
+
+# ╔═╡ cbad0679-34a7-4e23-bb39-3a090abdc08c
+# ================================
+# Clean data generator
+# ================================
+
+begin
+    function clean_make_3d(clean_dat; clean_n_channels = 20, clean_channel_noise = 0.1)
+        clean_dat_3d = permutedims(
+            repeat(clean_dat, 1, 1, clean_n_channels),
+            [3, 1, 2]
+        )
+
+        clean_dat_3d .+= clean_channel_noise .* randn(size(clean_dat_3d)...)
+
+        return clean_dat_3d
+    end
+
+    function clean_generate_case(; clean_condition_coef, clean_continuous_coef, clean_seed = 1)
+        Random.seed!(clean_seed)
+
+        clean_dat, clean_evts = UnfoldSim.predef_eeg(;
+            noiselevel = 0.1,
+            return_epoched = true,
+
+            # clean condition effect:
+            # [0, condition_coef]
+            # intercept = 0
+            # condition: face effect = condition_coef * N170
+            n1 = (
+                UnfoldSim.n170(;),
+                @formula(0 ~ 1 + condition),
+                [0, clean_condition_coef],
+                Dict(),
+                0
+            ),
+
+            # clean continuous effect:
+            # [0, continuous_coef]
+            # intercept = 0
+            # continuous slope = continuous_coef * P300
+            p3 = (
+                UnfoldSim.p300(;),
+                @formula(0 ~ 1 + continuous),
+                [0, clean_continuous_coef],
+                Dict(),
+                0
+            )
+        )
+
+        clean_dat_3d = clean_make_3d(clean_dat)
+
+        return (;
+            dat = clean_dat,
+            evts = clean_evts,
+            dat_3d = clean_dat_3d,
+            condition_coef = clean_condition_coef,
+            continuous_coef = clean_continuous_coef
+        )
+    end
+end
+
+# ╔═╡ d26976f1-78a4-40ca-a7ef-2265f0f5d0f7
+# ================================
+# Generate clean cases
+# ================================
+
+begin
+    # Original:
+    # condition effect = +3 * N170
+    # continuous effect = +1 * P300
+    clean_case_orig = clean_generate_case(
+        clean_condition_coef = 3,
+        clean_continuous_coef = 1,
+        clean_seed = 1
+    )
+
+    # Flip condition only:
+    # condition effect = -3 * N170
+    # continuous effect = +1 * P300
+    clean_case_flip_cond = clean_generate_case(
+        clean_condition_coef = -3,
+        clean_continuous_coef = 1,
+        clean_seed = 1
+    )
+
+    # Flip continuous only:
+    # condition effect = +3 * N170
+    # continuous effect = -1 * P300
+    clean_case_flip_cont = clean_generate_case(
+        clean_condition_coef = 3,
+        clean_continuous_coef = -1,
+        clean_seed = 1
+    )
+
+    # Flip both:
+    # condition effect = -3 * N170
+    # continuous effect = -1 * P300
+    clean_case_flip_both = clean_generate_case(
+        clean_condition_coef = -3,
+        clean_continuous_coef = -1,
+        clean_seed = 1
+    )
+end
+
+# ╔═╡ 5c33f8d7-af6f-4f78-958a-886adc330406
+# ================================
+# Fit B2B models
+# ================================
+
+begin
+    clean_out_orig = clean_run_b2b(clean_case_orig.dat_3d, clean_case_orig.evts)
+    clean_out_flip_cond = clean_run_b2b(clean_case_flip_cond.dat_3d, clean_case_flip_cond.evts)
+    clean_out_flip_cont = clean_run_b2b(clean_case_flip_cont.dat_3d, clean_case_flip_cont.evts)
+    clean_out_flip_both = clean_run_b2b(clean_case_flip_both.dat_3d, clean_case_flip_both.evts)
+
+    clean_results_orig_signed = clean_out_orig.result
+    clean_results_flip_cond_signed = clean_out_flip_cond.result
+    clean_results_flip_cont_signed = clean_out_flip_cont.result
+    clean_results_flip_both_signed = clean_out_flip_both.result
+
+    clean_results_orig_abs = clean_make_abs_result(clean_results_orig_signed)
+    clean_results_flip_cond_abs = clean_make_abs_result(clean_results_flip_cond_signed)
+    clean_results_flip_cont_abs = clean_make_abs_result(clean_results_flip_cont_signed)
+    clean_results_flip_both_abs = clean_make_abs_result(clean_results_flip_both_signed)
+end
+
+# ╔═╡ 29921771-17c6-4fc6-9c4e-6b4f5b171a1d
+unique(clean_results_orig_signed.coefname)
+
+# ╔═╡ 0d6eb0a7-2543-41b1-84ce-5bed37ec0582
+begin
+    clean_condition_name = first(
+        x for x in unique(clean_results_orig_signed.coefname)
+        if occursin("condition", string(x))
+    )
+
+    clean_continuous_name = first(
+        x for x in unique(clean_results_orig_signed.coefname)
+        if string(x) == "continuous"
+    )
+
+    clean_condition_name, clean_continuous_name
+end
+
+# ╔═╡ 08581c02-38cf-4716-bc08-fc1916b657f4
+# ================================
+# Plot signed vs abs B2B estimates
+# ================================
+
+begin
+    function clean_plot_b2b_into_axis!(clean_ax, clean_result)
+        for clean_coef in unique(clean_result.coefname)
+            clean_r = clean_result[clean_result.coefname .== clean_coef, :]
+            clean_r = sort(clean_r, :time)
+
+            lines!(
+                clean_ax,
+                clean_r.time,
+                clean_r.estimate,
+                label = string(clean_coef)
+            )
+        end
+    end
+
+    clean_fig = Figure(size = (1400, 1200))
+
+    clean_ax1 = Axis(clean_fig[1, 1],
+        title = "Original: signed",
+        xlabel = "Time [s]",
+        ylabel = "Signed B2B estimate"
+    )
+
+    clean_ax2 = Axis(clean_fig[1, 2],
+        title = "Original: abs",
+        xlabel = "Time [s]",
+        ylabel = "B2B magnitude"
+    )
+
+    clean_ax3 = Axis(clean_fig[2, 1],
+        title = "Flip condition: signed",
+        xlabel = "Time [s]",
+        ylabel = "Signed B2B estimate"
+    )
+
+    clean_ax4 = Axis(clean_fig[2, 2],
+        title = "Flip condition: abs",
+        xlabel = "Time [s]",
+        ylabel = "B2B magnitude"
+    )
+
+    clean_ax5 = Axis(clean_fig[3, 1],
+        title = "Flip continuous: signed",
+        xlabel = "Time [s]",
+        ylabel = "Signed B2B estimate"
+    )
+
+    clean_ax6 = Axis(clean_fig[3, 2],
+        title = "Flip continuous: abs",
+        xlabel = "Time [s]",
+        ylabel = "B2B magnitude"
+    )
+
+    clean_ax7 = Axis(clean_fig[4, 1],
+        title = "Flip both: signed",
+        xlabel = "Time [s]",
+        ylabel = "Signed B2B estimate"
+    )
+
+    clean_ax8 = Axis(clean_fig[4, 2],
+        title = "Flip both: abs",
+        xlabel = "Time [s]",
+        ylabel = "B2B magnitude"
+    )
+
+    clean_plot_b2b_into_axis!(clean_ax1, clean_results_orig_signed)
+    clean_plot_b2b_into_axis!(clean_ax2, clean_results_orig_abs)
+
+    clean_plot_b2b_into_axis!(clean_ax3, clean_results_flip_cond_signed)
+    clean_plot_b2b_into_axis!(clean_ax4, clean_results_flip_cond_abs)
+
+    clean_plot_b2b_into_axis!(clean_ax5, clean_results_flip_cont_signed)
+    clean_plot_b2b_into_axis!(clean_ax6, clean_results_flip_cont_abs)
+
+    clean_plot_b2b_into_axis!(clean_ax7, clean_results_flip_both_signed)
+    clean_plot_b2b_into_axis!(clean_ax8, clean_results_flip_both_abs)
+
+    axislegend(clean_ax1)
+    axislegend(clean_ax2)
+    axislegend(clean_ax3)
+    axislegend(clean_ax4)
+    axislegend(clean_ax5)
+    axislegend(clean_ax6)
+    axislegend(clean_ax7)
+    axislegend(clean_ax8)
+
+    linkyaxes!(
+        clean_ax1, clean_ax2,
+        clean_ax3, clean_ax4,
+        clean_ax5, clean_ax6,
+        clean_ax7, clean_ax8
+    )
+
+    clean_fig
+	# save("b2b_signs_comparison_8_panles_intercept).svg", clean_fig)
+end
+
+# ╔═╡ d0c064e5-2ab0-463b-be8c-8aedb6a0a665
+# ================================
+# Ground truth predictor effects
+# ================================
+
+begin
+    function clean_match_length(clean_x, clean_n)
+        clean_x_vec = collect(clean_x)
+
+        if length(clean_x_vec) >= clean_n
+            return clean_x_vec[1:clean_n]
+        else
+            return vcat(clean_x_vec, zeros(clean_n - length(clean_x_vec)))
+        end
+    end
+
+    clean_n_time = length(unique(clean_results_orig_signed.time))
+
+    clean_n170_basis = clean_match_length(UnfoldSim.n170(;), clean_n_time)
+    clean_p300_basis = clean_match_length(UnfoldSim.p300(;), clean_n_time)
+
+    clean_truth_orig = Dict(
+        "true_condition" => 3 .* clean_n170_basis,
+        "true_continuous" => 1 .* clean_p300_basis
+    )
+
+    clean_truth_flip_cond = Dict(
+        "true_condition" => -3 .* clean_n170_basis,
+        "true_continuous" => 1 .* clean_p300_basis
+    )
+
+    clean_truth_flip_cont = Dict(
+        "true_condition" => 3 .* clean_n170_basis,
+        "true_continuous" => -1 .* clean_p300_basis
+    )
+
+    clean_truth_flip_both = Dict(
+        "true_condition" => -3 .* clean_n170_basis,
+        "true_continuous" => -1 .* clean_p300_basis
+    )
+end
+
+
+# ╔═╡ 40aff207-f1d8-43b0-8a56-025683d18888
+# ================================
+# Plot ground truth effects
+# ================================
+
+begin
+    clean_gt_time = collect(range(0, step = 1 / 100, length = clean_n_time))
+
+    clean_gt_fig = Figure(size = (1000, 500))
+
+    clean_gt_ax1 = Axis(clean_gt_fig[1, 1],
+        title = "Ground truth: condition effect",
+        xlabel = "Time [s]",
+        ylabel = "Amplitude"
+    )
+
+    lines!(clean_gt_ax1, clean_gt_time, clean_truth_orig["true_condition"],
+        label = "+3 * N170"
+    )
+
+    lines!(clean_gt_ax1, clean_gt_time, clean_truth_flip_cond["true_condition"],
+        label = "-3 * N170"
+    )
+
+    axislegend(clean_gt_ax1)
+
+    clean_gt_ax2 = Axis(clean_gt_fig[1, 2],
+        title = "Ground truth: continuous effect",
+        xlabel = "Time [s]",
+        ylabel = "Amplitude"
+    )
+
+    lines!(clean_gt_ax2, clean_gt_time, clean_truth_orig["true_continuous"],
+        label = "+1 * P300"
+    )
+
+    lines!(clean_gt_ax2, clean_gt_time, clean_truth_flip_cont["true_continuous"],
+        label = "-1 * P300"
+    )
+
+    axislegend(clean_gt_ax2)
+
+    clean_gt_fig
+end
+
+# ╔═╡ 5a4efc96-4a89-4c05-bb25-3a60920c4dce
+# ================================
+# Alignment summary
+# ================================
+
+begin
+    function clean_alignment_row(clean_case, clean_predictor, clean_result, clean_coefname, clean_truth)
+        clean_r = clean_result[clean_result.coefname .== clean_coefname, :]
+        clean_r = sort(clean_r, :time)
+
+        clean_est = collect(clean_r.estimate)
+
+        return (
+            case = clean_case,
+            predictor = clean_predictor,
+            signed_alignment = cor(clean_est, clean_truth),
+            abs_alignment = cor(abs.(clean_est), abs.(clean_truth)),
+            min_est = minimum(clean_est),
+            max_est = maximum(clean_est),
+            prop_negative = sum(clean_est .< 0) / length(clean_est)
+        )
+    end
+
+    clean_alignment_summary = DataFrame([
+        clean_alignment_row(
+            "original",
+            "condition",
+            clean_results_orig_signed,
+            clean_condition_name,
+            clean_truth_orig["true_condition"]
+        ),
+
+        clean_alignment_row(
+            "flip_condition",
+            "condition",
+            clean_results_flip_cond_signed,
+            clean_condition_name,
+            clean_truth_flip_cond["true_condition"]
+        ),
+
+        clean_alignment_row(
+            "original",
+            "continuous",
+            clean_results_orig_signed,
+            clean_continuous_name,
+            clean_truth_orig["true_continuous"]
+        ),
+
+        clean_alignment_row(
+            "flip_continuous",
+            "continuous",
+            clean_results_flip_cont_signed,
+            clean_continuous_name,
+            clean_truth_flip_cont["true_continuous"]
+        ),
+
+        clean_alignment_row(
+            "flip_both",
+            "condition",
+            clean_results_flip_both_signed,
+            clean_condition_name,
+            clean_truth_flip_both["true_condition"]
+        ),
+
+        clean_alignment_row(
+            "flip_both",
+            "continuous",
+            clean_results_flip_both_signed,
+            clean_continuous_name,
+            clean_truth_flip_both["true_continuous"]
+        )
+    ])
+end
+
+# ╔═╡ bf9fc837-9a5a-4dd5-adbe-d5fc24e687cb
+begin
+	clean_case_orig_nonoise = clean_generate_case(
+	    clean_condition_coef = 3,
+	    clean_continuous_coef = 1,
+	    clean_seed = 1
+	)
+	
+	clean_case_orig_nonoise.dat_3d .= permutedims(
+	    repeat(clean_case_orig_nonoise.dat, 1, 1, 20),
+	    [3, 1, 2]
+	)
+	
+	clean_out_orig_nonoise = clean_run_b2b(
+	    clean_case_orig_nonoise.dat_3d,
+	    clean_case_orig_nonoise.evts
+	)
+	
+	plot_erp(clean_out_orig_nonoise.result;
+	    axis = (
+	        xlabel = "Time [s]",
+	        ylabel = "Signed B2B estimate",
+	        title = "No-noise original: signed"
+	    )
+	)
+end
+
+# ╔═╡ 756dee37-a189-49ff-9385-d23ff18891fa
+begin
+    r_cond = clean_out_orig_nonoise.result[
+        clean_out_orig_nonoise.result.coefname .== clean_condition_name, :
+    ]
+    r_cond = sort(r_cond, :time)
+
+    gt_cond = clean_truth_orig["true_condition"]
+
+    fig_comparison = Figure(size = (700, 400))
+    ax = Axis(fig_comparison[1, 1],
+        title = "No-noise: B2B estimate vs true condition effect",
+        xlabel = "Time [s]",
+        ylabel = "Scaled value"
+    )
+
+    # normalize only for visual comparison
+    est_scaled = r_cond.estimate ./ maximum(abs.(r_cond.estimate))
+    gt_scaled = gt_cond ./ maximum(abs.(gt_cond))
+
+    lines!(ax, r_cond.time, est_scaled, label = "B2B estimate, scaled")
+    lines!(ax, r_cond.time, gt_scaled, label = "true condition effect, scaled")
+
+    axislegend(ax)
+	
+    fig_comparison
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Unfold = "181c99d8-e21b-4ff3-b70b-c233eddec679"
 UnfoldDecode = "ec0f67a1-ae9f-4687-b20b-bd39d33e72da"
@@ -595,7 +1107,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.12.3"
 manifest_format = "2.0"
-project_hash = "d1e2bc26527743b37ef6b6e27eb1dee2e4ea32df"
+project_hash = "202ca8032e6b48276195ce53be795e663856f02c"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -3620,9 +4132,9 @@ version = "4.1.0+0"
 # ╠═c09ea1f1-6ae5-40aa-a162-67eab79367e5
 # ╠═3f906bdb-c03f-47e0-8cff-28740edec0c1
 # ╠═7021cb7c-00f7-4940-a358-6ff063acd8d9
+# ╠═d3008127-c8ce-4e95-93f2-7c3b56ab0fc7
 # ╠═4e57a1cc-cf7a-41cd-8d6e-94fa39e69afb
 # ╠═f1e1da0d-856f-454f-843d-9ba6fb276454
-# ╠═a0cc1406-ccaa-475b-ba30-49505f8811ea
 # ╠═a898db7c-6f5b-4319-8ec2-79d57b6fc781
 # ╠═9e703fe4-5d85-4e19-bb3b-14fe8131e142
 # ╠═9da4f5f6-c833-4fff-a38f-0efac0ffb2b9
@@ -3642,5 +4154,17 @@ version = "4.1.0+0"
 # ╠═1a5cce0f-325a-4ef7-85ef-dcfc8e0291eb
 # ╠═60598e3d-0e31-4572-b06a-2bfe688ce42e
 # ╠═04a3f3a7-28a3-44c4-a38b-6b6a426031d1
+# ╠═51adbea4-6079-409c-b710-2f329d68bd7b
+# ╠═cbad0679-34a7-4e23-bb39-3a090abdc08c
+# ╠═d26976f1-78a4-40ca-a7ef-2265f0f5d0f7
+# ╠═5c33f8d7-af6f-4f78-958a-886adc330406
+# ╠═29921771-17c6-4fc6-9c4e-6b4f5b171a1d
+# ╠═0d6eb0a7-2543-41b1-84ce-5bed37ec0582
+# ╠═08581c02-38cf-4716-bc08-fc1916b657f4
+# ╠═d0c064e5-2ab0-463b-be8c-8aedb6a0a665
+# ╠═40aff207-f1d8-43b0-8a56-025683d18888
+# ╠═5a4efc96-4a89-4c05-bb25-3a60920c4dce
+# ╠═bf9fc837-9a5a-4dd5-adbe-d5fc24e687cb
+# ╠═756dee37-a189-49ff-9385-d23ff18891fa
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
