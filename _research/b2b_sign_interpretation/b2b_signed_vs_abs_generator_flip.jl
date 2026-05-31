@@ -12,64 +12,17 @@ begin
 	using CairoMakie
 	using Random
 	using Unfold
+	using DataFrames
 end
 
-# ╔═╡ 4e8847c1-6a95-42a7-b009-6e385b466b88
-# =================
-# Cross-talk helper functions
-# =================
+# ╔═╡ 7b2076e3-1f4b-45f6-b5cd-845b4cba6734
+"""
+# B2B sign sanity check
 
-begin
-    using Statistics
-    using DataFrames
+This notebook checks whether B2B estimates flip sign when the simulated generator effect is flipped.
 
-    function match_length(x, n)
-        x = collect(x)
-
-        if length(x) >= n
-            return x[1:n]
-        else
-            return vcat(x, zeros(n - length(x)))
-        end
-    end
-
-    function crosstalk_matrix(result, true_effects; use_abs = false)
-        recovered_names = unique(result.coefname)
-        true_names = collect(keys(true_effects))
-
-        M = zeros(length(recovered_names), length(true_names))
-
-        for (i, rec_name) in enumerate(recovered_names)
-            r = result[result.coefname .== rec_name, :]
-            r = sort(r, :time)
-
-            recovered = collect(r.estimate)
-
-            for (j, true_name) in enumerate(true_names)
-                truth = true_effects[true_name]
-
-                if use_abs
-                    recovered_use = abs.(recovered)
-                    truth_use = abs.(truth)
-                else
-                    recovered_use = recovered
-                    truth_use = truth
-                end
-
-                M[i, j] = cor(recovered_use, truth_use)
-            end
-        end
-
-        df = DataFrame(recovered = string.(recovered_names))
-
-        for (j, true_name) in enumerate(true_names)
-            df[!, Symbol(true_name)] = M[:, j]
-        end
-
-        return df
-    end
-end
-
+The main question is whether the signed B2B estimate can be interpreted as ERP polarity, or whether B2B should mainly be interpreted as decodability / recoverability strength.
+"""
 
 # ╔═╡ 28932f7b-65dc-4b45-80c0-c04bea678942
 # ╠═╡ disabled = true
@@ -119,12 +72,6 @@ begin
 end
 
 
-# ╔═╡ 3f906bdb-c03f-47e0-8cff-28740edec0c1
-# ╠═╡ disabled = true
-#=╠═╡
-plot_erp(results_flip_both_abs; axis = (xlabel = "Time [s]", ylabel = "Performance"))
-  ╠═╡ =#
-
 # ╔═╡ 7021cb7c-00f7-4940-a358-6ff063acd8d9
 # ============================
 # Different generated data
@@ -136,7 +83,7 @@ begin
 	# --------------------------------------------
 	dat, evts = UnfoldSim.predef_eeg(; noiselevel = 0.1, return_epoched = true);
 	dat_3d = permutedims(repeat(dat, 1, 1, 20), [3 1 2]);
-	dat_3d .+= 0.1 * rand(size(dat_3d)...);
+	dat_3d .+= 0.1 * randn(size(dat_3d)...);
 
 
 
@@ -157,7 +104,7 @@ begin
 )
 
 	dat_3d_flip_cond = permutedims(repeat(dat_flip_cond, 1, 1, 20), [3, 1, 2])
-	dat_3d_flip_cond .+= 0.1 .* rand(size(dat_3d_flip_cond)...)
+	dat_3d_flip_cond .+= 0.1 .* randn(size(dat_3d_flip_cond)...)
 
 	# --------------------------------------------------
 	# 3) flipped generator: continuous effect = -1
@@ -174,11 +121,11 @@ begin
     )
 )
 	dat_3d_flip_cont = permutedims(repeat(dat_flip_cont, 1, 1, 20), [3, 1, 2])
-	dat_3d_flip_cont .+= 0.1 .* rand(size(dat_3d_flip_cont)...)
+	dat_3d_flip_cont .+= 0.1 .* randn(size(dat_3d_flip_cont)...)
 
 
 	# ---------------------------------------------
-	# 4) flipped generator: condition + continous
+	# 4) flipped generator: condition + continuous
 	# ------------------------------------------
 	dat_flip_both, evts_flip_both = UnfoldSim.predef_eeg(;
     noiselevel = 0.1,
@@ -204,7 +151,7 @@ begin
 )
 
 	dat_3d_flip_both = permutedims(repeat(dat_flip_both, 1, 1, 20), [3, 1, 2])
-	dat_3d_flip_both .+= 0.1 .* rand(size(dat_3d_flip_both)...)
+	dat_3d_flip_both .+= 0.1 .* randn(size(dat_3d_flip_both)...)
 end
 
 # ╔═╡ f1e1da0d-856f-454f-843d-9ba6fb276454
@@ -265,57 +212,57 @@ begin
 	)
 
 	
-	ax3 = Axis(fig[2, 1],
-		title = "Flipped both: signed",
-		xlabel = "Time [s]",
-		ylabel = "Performance"
-	)
-		
-	ax4 = Axis(fig[2, 2],
-		title = "Flipped both: abs",
-		xlabel = "Time [s]",
-		ylabel = "Performance"
-	)
 
-	ax5 = Axis(fig[3, 1],
+	ax3 = Axis(fig[3, 1],
 			  title = "Flipped condition: signed",
 			  xlabel = "Times [s]",
 			  ylabel = "Performance"
 	)
 
-	ax6 = Axis(fig[3, 2],
+	ax4 = Axis(fig[3, 2],
 			  title = "Flipped condition: abs",
-			  xlabel = "Times [s]",
+			  xlabel = "Time [s]",
 			  ylabel = "Performance"
 	)
 
-	ax7 = Axis(fig[4, 1],
-			  title = "Flipped continuous: singed",
+	ax5 = Axis(fig[4, 1],
+			  title = "Flipped continuous: signed",
 			  xlabel = "Times [s]",
 			  ylabel = "Performance"
 	)		
 
 
-	ax8 = Axis(fig[4, 2],
+	ax6 = Axis(fig[4, 2],
 			  title = "Flipped continuous: abs",
 			  xlabel = "Times [s]",
 			  ylabel = "Performance"
-	)		
+	)	
+
+	ax7 = Axis(fig[2, 1],
+		title = "Flipped both: signed",
+		xlabel = "Time [s]",
+		ylabel = "Performance"
+	)
+		
+	ax8 = Axis(fig[2, 2],
+		title = "Flipped both: abs",
+		xlabel = "Time [s]",
+		ylabel = "Performance"
+	)
 	
 	plot_b2b_into_axis!(ax1, results_orig_signed)
 	plot_b2b_into_axis!(ax2, results_orig_abs)
-		
-
-	plot_b2b_into_axis!(ax3, results_flip_both_signed)
-	plot_b2b_into_axis!(ax4, results_flip_both_abs)
-
 	
-	plot_b2b_into_axis!(ax5, results_flip_cond_signed)
-	plot_b2b_into_axis!(ax6, results_flip_cond_abs)
+	plot_b2b_into_axis!(ax3, results_flip_cond_signed)
+	plot_b2b_into_axis!(ax4, results_flip_cond_abs)
 
-	plot_b2b_into_axis!(ax7, results_flip_cont_signed)
-	plot_b2b_into_axis!(ax8, results_flip_cont_abs)
-	
+	plot_b2b_into_axis!(ax5, results_flip_cont_signed)
+	plot_b2b_into_axis!(ax6, results_flip_cont_abs)
+
+
+	plot_b2b_into_axis!(ax7, results_flip_both_signed)
+	plot_b2b_into_axis!(ax8, results_flip_both_abs)
+
 		
 	axislegend(ax1)
 	axislegend(ax2)
@@ -330,7 +277,7 @@ begin
 	linkyaxes!(ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8)
 	fig
 		
-	# save("b2b_signs_comparison_8_panles).svg", fig)
+	# save("b2b_signs_comparison_8_panels).svg", fig)
 end
 
 # ╔═╡ 4e57a1cc-cf7a-41cd-8d6e-94fa39e69afb
@@ -427,21 +374,6 @@ begin
     gt_fig
 end
 
-# ╔═╡ a898db7c-6f5b-4319-8ec2-79d57b6fc781
-pwd()
-
-# ╔═╡ 9e703fe4-5d85-4e19-bb3b-14fe8131e142
-# ╠═╡ disabled = true
-#=╠═╡
-plot_erp(results_flip_cont_signed; axis = (xlabel = "Time [s]", ylabel = "Performance"))
-  ╠═╡ =#
-
-# ╔═╡ 9da4f5f6-c833-4fff-a38f-0efac0ffb2b9
-# ╠═╡ disabled = true
-#=╠═╡
-plot_erp(results_flip_cont_abs; axis = (xlabel = "Time [s]", ylabel = "Performance"))
-  ╠═╡ =#
-
 # ╔═╡ 55903c29-cc48-4800-863a-e34cc38fd30c
 function signed_vs_abs_alignment(result, coefname, truth)
     r = result[result.coefname .== coefname, :]
@@ -458,117 +390,23 @@ function signed_vs_abs_alignment(result, coefname, truth)
     )
 end
 
-# ╔═╡ 0aa3e9ce-cb7d-4ea1-8e12-d46e44a65697
-# ======================
-# Ground truth waveforms
-# ======================
-
-begin
-    n_time = length(unique(results_orig_signed.time))
-
-    n1 = match_length(UnfoldSim.n170(;), n_time)
-    p3 = match_length(UnfoldSim.p300(;), n_time)
-
-    # original generator
-    truth_orig = Dict(
-        "true_condition" => 3 .* n1,
-        "true_continuous" => 1 .* p3
-    )
-
-    # flipped condition generator
-    truth_flip_cond = Dict(
-        "true_condition" => -3 .* n1,
-        "true_continuous" => 1 .* p3
-    )
-
-    # flipped continuous generator
-    truth_flip_cont = Dict(
-        "true_condition" => 3 .* n1,
-        "true_continuous" => -1 .* p3
-    )
-
-    # flipped both generator
-    truth_flip_both = Dict(
-        "true_condition" => -3 .* n1,
-        "true_continuous" => -1 .* p3
-    )
-end
-
 # ╔═╡ 44bf4472-fdb6-4ba4-8d5f-8e6a81b91aa0
 minimum(results_flip_cont_signed.estimate)
 
 # ╔═╡ 53f68f04-a47c-4b82-8b40-d947d6ddf127
 maximum(results_flip_cont_signed.estimate)
 
-# ╔═╡ 5e32bdff-a6e0-4be1-98f4-b9509634f606
-signed_vs_abs_alignment(
-    results_orig_signed,
-    "condition: face",
-    truth_orig["true_condition"]
-)
+# ╔═╡ 7c9e4259-85c7-40a4-a8d9-353351dee56b
+"""
+## Clean zero-intercept sign test
 
-# [5,3], [5,1]
+To avoid the ambiguity caused by the intercept, a clean version with zero intercept was tested:
 
-# ╔═╡ a3b9f708-e29f-4b29-a869-04091ffa1f4a
-signed_vs_abs_alignment(
-    results_flip_cond_signed,
-    "condition: face",
-    truth_flip_cond["true_condition"]
-)
-# [5, -9], [5, 1]
+- condition: `[0, 3]` vs `[0, -3]`
+- continuous: `[0, 1]` vs `[0, -1]`
 
-# ╔═╡ 8c7d27fb-44ef-4205-a768-1b15878cf3de
-signed_vs_abs_alignment(
-    results_orig_signed,
-    "continuous",
-    truth_orig["true_continuous"]
-) 
-# [5,3], [5,1]
-
-# ╔═╡ fc708cbc-1f0d-4d3b-a995-e268edb0860c
-signed_vs_abs_alignment(
-    results_flip_cont_signed,
-    "continuous",
-    truth_flip_cont["true_continuous"]
-)
-# [5, 3], [5, -1]
-
-# ╔═╡ 479c6df6-0d9d-4ca5-9f1d-01862398543a
-# =================
-# Cross-talk matrices
-# =================
-
-begin
-    # signed cross-talk
-    ct_orig_signed = crosstalk_matrix(results_orig_signed, truth_orig; use_abs = false)
-    ct_flip_cond_signed = crosstalk_matrix(results_flip_cond_signed, truth_flip_cond; use_abs = false)
-    ct_flip_cont_signed = crosstalk_matrix(results_flip_cont_signed, truth_flip_cont; use_abs = false)
-    ct_flip_both_signed = crosstalk_matrix(results_flip_both_signed, truth_flip_both; use_abs = false)
-
-    # magnitude / abs cross-talk
-    ct_orig_abs = crosstalk_matrix(results_orig_signed, truth_orig; use_abs = true)
-    ct_flip_cond_abs = crosstalk_matrix(results_flip_cond_signed, truth_flip_cond; use_abs = true)
-    ct_flip_cont_abs = crosstalk_matrix(results_flip_cont_signed, truth_flip_cont; use_abs = true)
-    ct_flip_both_abs = crosstalk_matrix(results_flip_both_signed, truth_flip_both; use_abs = true)
-end
-
-# ╔═╡ c49c574a-1409-4264-8c61-5a567c607140
-ct_orig_signed
-
-# ╔═╡ 3c3ad25e-1ff0-4042-b6ec-c8fcb85208f0
-ct_orig_abs
-
-# ╔═╡ 243d0cf7-395a-4bcd-aac0-657a12fbf0c7
-ct_flip_both_signed
-
-# ╔═╡ 1a5cce0f-325a-4ef7-85ef-dcfc8e0291eb
-ct_flip_both_abs
-
-# ╔═╡ 60598e3d-0e31-4572-b06a-2bfe688ce42e
-ct_flip_cond_signed
-
-# ╔═╡ 04a3f3a7-28a3-44c4-a38b-6b6a426031d1
-ct_flip_cond_abs
+Here, flipping the coefficient also flips the predictor-specific waveform. This is the main sanity check for whether B2B estimates follow the simulated generator sign.
+"""
 
 # ╔═╡ 51adbea4-6079-409c-b710-2f329d68bd7b
 # ================================
@@ -634,11 +472,18 @@ begin
         return clean_dat_3d
     end
 
-    function clean_generate_case(; clean_condition_coef, clean_continuous_coef, clean_seed = 1)
+    function clean_generate_case(; 
+		clean_condition_coef,
+		clean_continuous_coef, 
+		clean_seed = 1,
+		clean_noiselevel = 0.1,
+		clean_channel_noise = 0.1
+								
+	)
         Random.seed!(clean_seed)
 
         clean_dat, clean_evts = UnfoldSim.predef_eeg(;
-            noiselevel = 0.1,
+            noiselevel = clean_noiselevel,
             return_epoched = true,
 
             # clean condition effect:
@@ -666,14 +511,19 @@ begin
             )
         )
 
-        clean_dat_3d = clean_make_3d(clean_dat)
+        clean_dat_3d = clean_make_3d(
+			clean_dat;
+			clean_channel_noise = clean_channel_noise
+		)
 
         return (;
             dat = clean_dat,
             evts = clean_evts,
             dat_3d = clean_dat_3d,
             condition_coef = clean_condition_coef,
-            continuous_coef = clean_continuous_coef
+            continuous_coef = clean_continuous_coef,
+			noiselevel = clean_noiselevel,
+			channel_noise = clean_channel_noise
         )
     end
 end
@@ -690,7 +540,9 @@ begin
     clean_case_orig = clean_generate_case(
         clean_condition_coef = 3,
         clean_continuous_coef = 1,
-        clean_seed = 1
+        clean_seed = 1,
+		clean_noiselevel= 0.0,
+		clean_channel_noise= 0.0
     )
 
     # Flip condition only:
@@ -699,7 +551,9 @@ begin
     clean_case_flip_cond = clean_generate_case(
         clean_condition_coef = -3,
         clean_continuous_coef = 1,
-        clean_seed = 1
+        clean_seed = 1,
+		clean_noiselevel= 0.0,
+		clean_channel_noise= 0.0
     )
 
     # Flip continuous only:
@@ -708,7 +562,9 @@ begin
     clean_case_flip_cont = clean_generate_case(
         clean_condition_coef = 3,
         clean_continuous_coef = -1,
-        clean_seed = 1
+        clean_seed = 1,
+		clean_noiselevel= 0.0,
+		clean_channel_noise= 0.0
     )
 
     # Flip both:
@@ -717,8 +573,12 @@ begin
     clean_case_flip_both = clean_generate_case(
         clean_condition_coef = -3,
         clean_continuous_coef = -1,
-        clean_seed = 1
+        clean_seed = 1,
+		clean_noiselevel= 0.0,
+		clean_channel_noise= 0.0
     )
+
+	
 end
 
 # ╔═╡ 5c33f8d7-af6f-4f78-958a-886adc330406
@@ -731,6 +591,7 @@ begin
     clean_out_flip_cond = clean_run_b2b(clean_case_flip_cond.dat_3d, clean_case_flip_cond.evts)
     clean_out_flip_cont = clean_run_b2b(clean_case_flip_cont.dat_3d, clean_case_flip_cont.evts)
     clean_out_flip_both = clean_run_b2b(clean_case_flip_both.dat_3d, clean_case_flip_both.evts)
+	
 
     clean_results_orig_signed = clean_out_orig.result
     clean_results_flip_cond_signed = clean_out_flip_cond.result
@@ -951,80 +812,6 @@ begin
     clean_gt_fig
 end
 
-# ╔═╡ 5a4efc96-4a89-4c05-bb25-3a60920c4dce
-# ================================
-# Alignment summary
-# ================================
-
-begin
-    function clean_alignment_row(clean_case, clean_predictor, clean_result, clean_coefname, clean_truth)
-        clean_r = clean_result[clean_result.coefname .== clean_coefname, :]
-        clean_r = sort(clean_r, :time)
-
-        clean_est = collect(clean_r.estimate)
-
-        return (
-            case = clean_case,
-            predictor = clean_predictor,
-            signed_alignment = cor(clean_est, clean_truth),
-            abs_alignment = cor(abs.(clean_est), abs.(clean_truth)),
-            min_est = minimum(clean_est),
-            max_est = maximum(clean_est),
-            prop_negative = sum(clean_est .< 0) / length(clean_est)
-        )
-    end
-
-    clean_alignment_summary = DataFrame([
-        clean_alignment_row(
-            "original",
-            "condition",
-            clean_results_orig_signed,
-            clean_condition_name,
-            clean_truth_orig["true_condition"]
-        ),
-
-        clean_alignment_row(
-            "flip_condition",
-            "condition",
-            clean_results_flip_cond_signed,
-            clean_condition_name,
-            clean_truth_flip_cond["true_condition"]
-        ),
-
-        clean_alignment_row(
-            "original",
-            "continuous",
-            clean_results_orig_signed,
-            clean_continuous_name,
-            clean_truth_orig["true_continuous"]
-        ),
-
-        clean_alignment_row(
-            "flip_continuous",
-            "continuous",
-            clean_results_flip_cont_signed,
-            clean_continuous_name,
-            clean_truth_flip_cont["true_continuous"]
-        ),
-
-        clean_alignment_row(
-            "flip_both",
-            "condition",
-            clean_results_flip_both_signed,
-            clean_condition_name,
-            clean_truth_flip_both["true_condition"]
-        ),
-
-        clean_alignment_row(
-            "flip_both",
-            "continuous",
-            clean_results_flip_both_signed,
-            clean_continuous_name,
-            clean_truth_flip_both["true_continuous"]
-        )
-    ])
-end
-
 # ╔═╡ bf9fc837-9a5a-4dd5-adbe-d5fc24e687cb
 begin
 	clean_case_orig_nonoise = clean_generate_case(
@@ -1086,7 +873,6 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Unfold = "181c99d8-e21b-4ff3-b70b-c233eddec679"
 UnfoldDecode = "ec0f67a1-ae9f-4687-b20b-bd39d33e72da"
 UnfoldMakie = "69a5ce3b-64fb-4f22-ae69-36dd4416af2a"
@@ -1107,7 +893,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.12.3"
 manifest_format = "2.0"
-project_hash = "202ca8032e6b48276195ce53be795e663856f02c"
+project_hash = "dea7e43d1c4361a1268bb50aff5d5c5b96ab05ab"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -4127,33 +3913,18 @@ version = "4.1.0+0"
 """
 
 # ╔═╡ Cell order:
+# ╠═7b2076e3-1f4b-45f6-b5cd-845b4cba6734
 # ╠═ea5a1c74-4ea7-11f1-9c5e-591249c851f0
 # ╠═28932f7b-65dc-4b45-80c0-c04bea678942
 # ╠═c09ea1f1-6ae5-40aa-a162-67eab79367e5
-# ╠═3f906bdb-c03f-47e0-8cff-28740edec0c1
 # ╠═7021cb7c-00f7-4940-a358-6ff063acd8d9
 # ╠═d3008127-c8ce-4e95-93f2-7c3b56ab0fc7
 # ╠═4e57a1cc-cf7a-41cd-8d6e-94fa39e69afb
 # ╠═f1e1da0d-856f-454f-843d-9ba6fb276454
-# ╠═a898db7c-6f5b-4319-8ec2-79d57b6fc781
-# ╠═9e703fe4-5d85-4e19-bb3b-14fe8131e142
-# ╠═9da4f5f6-c833-4fff-a38f-0efac0ffb2b9
-# ╠═4e8847c1-6a95-42a7-b009-6e385b466b88
 # ╠═55903c29-cc48-4800-863a-e34cc38fd30c
-# ╠═0aa3e9ce-cb7d-4ea1-8e12-d46e44a65697
 # ╠═44bf4472-fdb6-4ba4-8d5f-8e6a81b91aa0
 # ╠═53f68f04-a47c-4b82-8b40-d947d6ddf127
-# ╠═5e32bdff-a6e0-4be1-98f4-b9509634f606
-# ╠═a3b9f708-e29f-4b29-a869-04091ffa1f4a
-# ╠═8c7d27fb-44ef-4205-a768-1b15878cf3de
-# ╠═fc708cbc-1f0d-4d3b-a995-e268edb0860c
-# ╠═479c6df6-0d9d-4ca5-9f1d-01862398543a
-# ╠═c49c574a-1409-4264-8c61-5a567c607140
-# ╠═3c3ad25e-1ff0-4042-b6ec-c8fcb85208f0
-# ╠═243d0cf7-395a-4bcd-aac0-657a12fbf0c7
-# ╠═1a5cce0f-325a-4ef7-85ef-dcfc8e0291eb
-# ╠═60598e3d-0e31-4572-b06a-2bfe688ce42e
-# ╠═04a3f3a7-28a3-44c4-a38b-6b6a426031d1
+# ╠═7c9e4259-85c7-40a4-a8d9-353351dee56b
 # ╠═51adbea4-6079-409c-b710-2f329d68bd7b
 # ╠═cbad0679-34a7-4e23-bb39-3a090abdc08c
 # ╠═d26976f1-78a4-40ca-a7ef-2265f0f5d0f7
@@ -4163,7 +3934,6 @@ version = "4.1.0+0"
 # ╠═08581c02-38cf-4716-bc08-fc1916b657f4
 # ╠═d0c064e5-2ab0-463b-be8c-8aedb6a0a665
 # ╠═40aff207-f1d8-43b0-8a56-025683d18888
-# ╠═5a4efc96-4a89-4c05-bb25-3a60920c4dce
 # ╠═bf9fc837-9a5a-4dd5-adbe-d5fc24e687cb
 # ╠═756dee37-a189-49ff-9385-d23ff18891fa
 # ╟─00000000-0000-0000-0000-000000000001
