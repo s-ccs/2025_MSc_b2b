@@ -1739,7 +1739,6 @@ rerp_continuous_scores, rerp_continuous_models =
         des_rerp,
         ridgeTunedModel;
         target = :continuous,
-        nfolds = 3,
     )
 
 # ╔═╡ 63f6376c-cb17-4112-b6b8-c9ac82771178
@@ -1749,7 +1748,6 @@ rerp_condition_scores, rerp_condition_models =
         des_rerp,
         ridgeTunedModel;
         target = :condition_num,
-        nfolds = 3,
     )
 
 # ╔═╡ 7e8b486f-f14a-4c38-b005-901d2c581928
@@ -1761,12 +1759,15 @@ fig_rerp_condition = plot_decoding_grid(
 )
 
 # ╔═╡ f2ad34ad-3408-4b7e-87a6-1be4871084f9
-fig_rerp_continuous = plot_decoding_grid(
-    rerp_continuous_scores,
-    cfg;
-    target = :continuous,
-    score_col = :estimate,
-)
+begin
+	fig_rerp_continuous = plot_decoding_grid(
+	    rerp_continuous_scores,
+	    cfg;
+	    target = :continuous,
+	    score_col = :estimate,
+	)
+	save("fig_rerp_continuous.svg", fig_rerp_continuous)
+end
 
 # ╔═╡ 0cdb3a71-0706-4af8-b892-579dbab4526f
 combine(
@@ -1775,25 +1776,6 @@ combine(
     :estimate => maximum => :maximum_R2,
     nrow => :nrows,
 )
-
-# ╔═╡ 660f5fae-737f-401d-9929-a8d1f761de2b
-
-
-# ╔═╡ bbf7c325-9db8-4598-8456-2e050124a94a
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-
-    fig_rerp_continuous = plot_decoding_grid(
-        rerp_continuous_scores,
-        cfg;
-        target = :continuous,
-        score_col = :estimate,
-    )
-
-    fig_rerp_continuous
-end
-  ╠═╡ =#
 
 # ╔═╡ 7cddeb26-ea36-45db-aa69-364f50148c1b
 # ╠═╡ disabled = true
@@ -2114,6 +2096,435 @@ function plot_decoding_grid(
 end
   ╠═╡ =#
 
+# ╔═╡ 660f5fae-737f-401d-9929-a8d1f761de2b
+
+
+# ╔═╡ 848c8f62-09e2-49b2-bf19-c737725e9127
+
+
+# ╔═╡ 73e2179d-5369-4745-b7b4-7bc4c6408130
+
+
+# ╔═╡ 003fd384-9c6e-4f98-88a2-77132225ec3c
+"""b2b only"""
+
+# ╔═╡ 30cb6203-d9a4-40a6-b802-f3f00fa3d76a
+cross_val_reps = 3
+
+# ╔═╡ 5dd04bb5-edf0-4cad-8460-8fb4afd6256b
+b2b_solver = (x, y) -> UnfoldDecode.solver_b2b(x, y; cross_val_reps=cross_val_reps);
+
+# ╔═╡ e6941d15-90d8-4d28-98f5-be90b3d91efd
+begin
+    fo_b2b = @formula(0 ~ 1 + condition + continuous)
+
+    n_timepoints_b2b = size(standard_cases.clean[1], 2)
+    times_b2b = (0:n_timepoints_b2b-1) ./ cfg.sfreq
+
+    des_b2b_plain = [
+        Any => (
+            fo_b2b,
+            times_b2b,
+        )
+    ]
+end
+
+# ╔═╡ ee0f9f8f-ecdb-475d-b601-0d600bda4a87
+# ╠═╡ disabled = true
+#=╠═╡
+function fit_b2b_only_cases(
+    cases,
+	design;
+)
+    scores_tables = DataFrame[]
+    fitted_models = Dict{Symbol, Any}()
+
+    for (case_name, (dat, evts)) in pairs(cases)
+
+        uf_b2b_only = Unfold.fit(
+            UnfoldDecode.UnfoldModel,
+            design,
+            evts,
+            dat;
+			solver = b2b_solver,
+        )
+
+		b2b_only_results = coeftable(uf_b2b_only)
+		b2b_only_results.estimate = abs.(b2b_only_results.estimate)
+		b2b_only_results = b2b_only_results[b2b_only_results.coefname .!="(Intercept)", :]
+		score_case = b2b_only_results
+
+		score_case[!, :case] = fill(String(case_name), nrow(score_case))
+
+        push!(scores_tables, score_case)
+        fitted_models[case_name] = uf_b2b_only
+    end
+
+    return vcat(scores_tables...), fitted_models
+end
+  ╠═╡ =#
+
+# ╔═╡ eebded5d-134d-43fe-9107-9ce960396de7
+function fit_b2b_only_cases(
+    cases,
+    design,
+)
+    result_tables = DataFrame[]
+    fitted_models = Dict{Symbol, Any}()
+
+    for (case_name, (dat, evts)) in pairs(cases)
+
+        uf_b2b = Unfold.fit(
+            UnfoldDecode.UnfoldModel,
+            design,
+            evts,
+            dat;
+            solver = b2b_solver,
+        )
+
+        result = coeftable(uf_b2b)
+
+        result = result[
+            result.coefname .!= "(Intercept)",
+            :
+        ]
+
+        result[!, :case] .= String(case_name)
+
+        push!(result_tables, result)
+        fitted_models[case_name] = uf_b2b
+    end
+
+    return vcat(result_tables...), fitted_models
+end
+
+# ╔═╡ b2acf9d6-3715-4a67-9f60-c50b92996d47
+b2b_only_scores, b2b_only_models =
+    fit_b2b_only_cases(
+        standard_cases,
+        des_b2b_plain,
+    )
+
+# ╔═╡ fa1c36ea-14c9-40ff-bff3-34f6de835b1d
+begin
+	b2b_condition_scores =
+	    b2b_only_scores[
+	        string.(b2b_only_scores.coefname) .== "condition",
+	        :
+	    ]
+	
+	b2b_continuous_scores =
+	    b2b_only_scores[
+	        string.(b2b_only_scores.coefname) .== "continuous",
+	        :
+	    ]
+end
+
+# ╔═╡ 111b0a7c-50b9-435b-a82d-f69cc032ba66
+function plot_b2b_grid(
+    scores::AbstractDataFrame,
+    cfg;
+    target::Symbol,
+    score_col::Symbol = :estimate,
+    use_abs::Bool = true,
+    guide_peak::Real = 0.45,
+)
+
+    columns = propertynames(scores)
+
+    :case in columns ||
+        error("`scores` must contain a :case column.")
+
+    :coefname in columns ||
+        error("`scores` must contain a :coefname column.")
+
+    score_col in columns ||
+        error(
+            "`scores` has no column $score_col. " *
+            "Available columns: $columns"
+        )
+
+    time_col =
+        if :time in columns
+            :time
+        elseif :timepoint in columns
+            :timepoint
+        else
+            error("`scores` must contain :time or :timepoint.")
+        end
+
+    # ------------------------------------------
+    # choose the coefficient rows for this target
+    # ------------------------------------------
+
+    coefnames = string.(scores.coefname)
+
+    target_mask =
+        if target == :continuous
+            occursin.("continuous", coefnames)
+
+        elseif target in (:condition, :condition_num)
+            occursin.("condition", coefnames)
+
+        else
+            error("`target` must be :continuous or :condition")
+        end
+
+    target_scores = scores[target_mask, :]
+
+    isempty(target_scores) &&
+        error(
+            "No rows found for target=$target. " *
+            "Available coefnames: $(unique(coefnames))"
+        )
+
+    # ------------------------------------------
+    # helper: extract one case curve
+    # ------------------------------------------
+
+    function get_curve(case_name::String)
+        mask = string.(target_scores.case) .== case_name
+
+        any(mask) ||
+            error(
+                "No case named \"$case_name\". " *
+                "Available cases: $(unique(string.(target_scores.case)))"
+            )
+
+        time =
+            if time_col == :time
+                Float64.(target_scores[mask, :time])
+            else
+                (Float64.(target_scores[mask, :timepoint]) .- 1) ./ cfg.sfreq
+            end
+
+        values = Float64.(target_scores[mask, score_col])
+
+        if use_abs
+            values = abs.(values)
+        end
+
+        order = sortperm(time)
+        return time[order], values[order]
+    end
+
+    # ------------------------------------------
+    # timing guides
+    # ------------------------------------------
+
+    function scale_guide(effect)
+        effect_abs = abs.(Float64.(effect))
+        peak = maximum(effect_abs)
+
+        return peak == 0 ?
+               zeros(length(effect_abs)) :
+               guide_peak .* effect_abs ./ peak
+    end
+
+    n170_effect =
+        cfg.β_condition .*
+        UnfoldSim.n170(; sfreq = cfg.sfreq)
+
+    p300_effect =
+        cfg.β_continuous .*
+        UnfoldSim.p300(; sfreq = cfg.sfreq)
+
+    n170_guide = scale_guide(n170_effect)
+    p300_guide = scale_guide(p300_effect)
+
+    n170_time = (0:length(n170_guide)-1) ./ cfg.sfreq
+    p300_time = (0:length(p300_guide)-1) ./ cfg.sfreq
+
+    # ------------------------------------------
+    # labels and colors
+    # ------------------------------------------
+
+    condition_target = target in (:condition, :condition_num)
+
+    figure_title =
+        condition_target ?
+        "Condition B2B" :
+        "Continuous B2B"
+
+    ylabel_text =
+        if use_abs
+            "B2B estimate magnitude"
+        else
+            "B2B estimate"
+        end
+
+    case_order = ("clean", "overlap", "confound", "both")
+
+    case_titles = Dict(
+        "clean" => "Clean",
+        "overlap" => "Overlap",
+        "confound" => "Confound",
+        "both" => "Both",
+    )
+
+    colors = Dict(
+        "clean" => :dodgerblue,
+        "overlap" => :darkorange,
+        "confound" => :seagreen,
+        "both" => :deeppink,
+    )
+
+    # ------------------------------------------
+    # figure
+    # ------------------------------------------
+
+    fig = Figure(
+        size = (1000, 720),
+        backgroundcolor = :white,
+    )
+
+    axes = Axis[]
+
+    for (index, case_name) in enumerate(case_order)
+
+        row = index <= 2 ? 1 : 2
+        col = isodd(index) ? 1 : 2
+
+        show_x = row == 2
+        show_y = col == 1
+
+        ax = Axis(
+            fig[row, col];
+            title = case_titles[case_name],
+            xlabel = show_x ? "Time [s]" : "",
+            ylabel = show_y ? ylabel_text : "",
+            xticklabelsvisible = show_x,
+            xticksvisible = show_x,
+            yticklabelsvisible = show_y,
+            yticksvisible = show_y,
+            xgridvisible = false,
+            ygridvisible = false,
+            topspinevisible = false,
+            rightspinevisible = false,
+        )
+
+        time, values = get_curve(case_name)
+
+        lines!(
+            ax,
+            time,
+            values;
+            color = colors[case_name],
+            linewidth = 2.5,
+        )
+
+        # --------------------------------------
+        # decide which guides to show
+        # --------------------------------------
+
+        confounded_case = case_name in ("confound", "both")
+
+        show_n170 =
+            if condition_target
+                true
+            else
+                confounded_case
+            end
+
+        show_p300 =
+            if condition_target
+                confounded_case
+            else
+                true
+            end
+
+        if show_n170
+            lines!(
+                ax,
+                n170_time,
+                n170_guide;
+                color = :black,
+                linestyle = :dash,
+                linewidth = 2.5,
+            )
+        end
+
+        if show_p300
+            lines!(
+                ax,
+                p300_time,
+                p300_guide;
+                color = :gray40,
+                linestyle = :dot,
+                linewidth = 2.5,
+            )
+        end
+
+        hlines!(
+            ax,
+            [0.0];
+            color = (:gray, 0.35),
+            linewidth = 1,
+        )
+
+        push!(axes, ax)
+    end
+
+    linkxaxes!(axes...)
+    linkyaxes!(axes...)
+
+    Label(
+        fig[0, 1:2],
+        figure_title;
+        fontsize = 24,
+        font = :bold,
+    )
+
+    legend_elements = [
+        LineElement(color = colors["clean"], linewidth = 2.5),
+        LineElement(color = colors["overlap"], linewidth = 2.5),
+        LineElement(color = colors["confound"], linewidth = 2.5),
+        LineElement(color = colors["both"], linewidth = 2.5),
+        LineElement(color = :black, linestyle = :dash, linewidth = 2.5),
+        LineElement(color = :gray40, linestyle = :dot, linewidth = 2.5),
+    ]
+
+    legend_labels = [
+        "Clean",
+        "Overlap",
+        "Confound",
+        "Both",
+        "N170 timing guide",
+        "P300 timing guide",
+    ]
+
+    Legend(
+        fig[3, 1:2],
+        legend_elements,
+        legend_labels;
+        orientation = :horizontal,
+        framevisible = false,
+        nbanks = 2,
+    )
+
+    colgap!(fig.layout, 24)
+    rowgap!(fig.layout, 16)
+
+    return fig
+end
+
+# ╔═╡ d52118da-353c-419c-8f02-939725d21570
+fig_b2b_continuous = plot_b2b_grid(
+    b2b_only_scores,
+    cfg;
+    target = :continuous,
+)
+
+# ╔═╡ 810aeb3f-ab03-485a-9faf-c4a76da3ad20
+fig_b2b_condition = plot_b2b_grid(
+    b2b_only_scores,
+    cfg;
+    target = :condition,
+)
+
+# ╔═╡ 62606fef-1c93-475e-a643-3477528222d6
+
+
 # ╔═╡ Cell order:
 # ╠═f43ecec0-8a81-11f1-a925-3d063fa9b39c
 # ╠═c8a40da4-af0c-470a-9227-2073e5bfc622
@@ -2151,6 +2562,19 @@ end
 # ╠═7e8b486f-f14a-4c38-b005-901d2c581928
 # ╠═f2ad34ad-3408-4b7e-87a6-1be4871084f9
 # ╠═0cdb3a71-0706-4af8-b892-579dbab4526f
-# ╠═660f5fae-737f-401d-9929-a8d1f761de2b
-# ╟─bbf7c325-9db8-4598-8456-2e050124a94a
 # ╟─7cddeb26-ea36-45db-aa69-364f50148c1b
+# ╠═660f5fae-737f-401d-9929-a8d1f761de2b
+# ╠═848c8f62-09e2-49b2-bf19-c737725e9127
+# ╠═73e2179d-5369-4745-b7b4-7bc4c6408130
+# ╠═003fd384-9c6e-4f98-88a2-77132225ec3c
+# ╠═30cb6203-d9a4-40a6-b802-f3f00fa3d76a
+# ╠═5dd04bb5-edf0-4cad-8460-8fb4afd6256b
+# ╠═e6941d15-90d8-4d28-98f5-be90b3d91efd
+# ╟─ee0f9f8f-ecdb-475d-b601-0d600bda4a87
+# ╠═eebded5d-134d-43fe-9107-9ce960396de7
+# ╠═b2acf9d6-3715-4a67-9f60-c50b92996d47
+# ╠═fa1c36ea-14c9-40ff-bff3-34f6de835b1d
+# ╟─111b0a7c-50b9-435b-a82d-f69cc032ba66
+# ╠═d52118da-353c-419c-8f02-939725d21570
+# ╠═810aeb3f-ab03-485a-9faf-c4a76da3ad20
+# ╠═62606fef-1c93-475e-a643-3477528222d6
