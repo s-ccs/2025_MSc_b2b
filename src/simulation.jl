@@ -21,7 +21,7 @@ end
 
 struct SimulationDesign <: UnfoldSim.AbstractDesign
     n_trials::Int
-    confounded::Bool
+    confound::Bool
     rho::Float64
 end
 
@@ -42,7 +42,7 @@ function UnfoldSim.generate_events(
 
     condition_num = ifelse.(condition .== "face", 1.0, -1.0)
 
-    if design.confounded
+    if design.confound
         continuous = 
             design.rho * condition_num .+ 
             sqrt(1 - design.rho^2) .* 
@@ -82,16 +82,9 @@ end
 function make_onset(
     cfg::SimulationConfig;
     overlap::Bool = false,
-    continuous::Bool = false,
 )
     # No-overlap case
     if !overlap
-
-        if !continuous
-            return UnfoldSim.NoOnset()
-        end
-        # Continuous data connot use NoOnset().
-        # Give events enough spacing that the components do not overlap.
         max_component_length = maximum([
             length(UnfoldSim.n170(; sfreq = cfg.sfreq)),
             length(UnfoldSim.p300(; sfreq = cfg.sfreq)),
@@ -111,80 +104,64 @@ function make_onset(
 
     onset = UnfoldSim.LogNormalOnsetFormula(
         μ_formula = @formula(0 ~ 1 + condition),
-        μ_β = [μ0,    # car/reference-level log-onset mean
-            overlap ? cfg.onset_condition_bias : 0.0, ], # face minus car difference
+        μ_β = [
+            μ0,    # car/reference-level log-onset mean
+            cfg.onset_condition_bias,], # face minus car difference
+
         σ_β = [σ],
         offset_β = [0.0],
         truncate_upper = nothing,
     )
     
-    if cfg.shift_onset
-        return UnfoldSim.ShiftOnsetByOne(onset)
-    else
-        return onset
-    end
+    return cfg.shift_onset ? 
+        UnfoldSim.ShiftOnsetByOne(onset) : Onset
 end
 
-
-function simulate_condition_events(
+function simulator(
     cfg::SimulationConfig;
-    confounded::Bool = false,
+    confound::Bool = false,
     overlap::Bool = false,
     seed::Int = 12,
+    epoch_window = (-0.1, 0.5),
 )
     rng = MersenneTwister(seed)
-    design = SimulationDesign(cfg.n_trials, confounded, cfg.rho,)
+    design = SimulationDesign(cfg.n_trials, confound, cfg.rho,)
     components = make_components(cfg)
     onset = make_onset(cfg; overlap = overlap,)
     noise = UnfoldSim.PinkNoise(noiselevel = cfg.noiselevel,)
 
-    dat, evts = UnfoldSim.simulate(rng, design, components, onset, noise; return_epoched = true,)
-    evts[!, :event] = fill("stimulus", nrow(evts),)
-
-    dat_3d = permutedims(repeat(dat, 1, 1, cfg.n_channels), (3, 1, 2),)
-    dat_3d .+= cfg.channel_noise_sd .* randn(rng, size(dat_3d))
-
-    return dat_3d, evts
-end
-
-function simulate_continuous_events(
-    cfg::SimulationConfig;
-    confounded::Bool = false,
-    overlap::Bool = false,
-    seed::Int = 12,
-)
-    rng = MersenneTwister(seed)
-    design = SimulationDesign(cfg.n_trials, confounded, cfg.rho,)
-    components = make_components(cfg)
-    onset = make_onset(cfg; overlap = overlap, continuous = true,)
-    noise = UnfoldSim.PinkNoise(noiselevel = cfg.noiselevel,)
-
+    # simulate continuous data (1 channel) and events
     dat_1ch, evts = UnfoldSim.simulate(rng, design, components, onset, noise; return_epoched = false,)
-
     evts[!, :event] = fill("stimulus", nrow(evts),)
 
-    dat_vector = vec(dat_1ch)
-
-	# channels x continuous samples
-	dat_cont = repeat(reshape(dat_vector, 1, :), cfg.n_channels, 1,)
-
+	# channels x continuous samples, make multichannel
+	dat_cont = repeat(reshape(vec(dat_1ch), 1, :), cfg.n_channels, 1,)
 	dat_cont .+= cfg.channel_noise_sd .* randn(rng, size(dat_cont))
 
-	return dat_cont, evts 
+
+    # cut epochs from dat_cont
+    dat_epoched, times = Unfold.epoch(dat_cont, evts, epoch_window, cfg.sfreq,)
+    evts_epoched, dat_epoched = Unfold.drop_missing_epochs(evts, dat_epoched,)
+
+
+	return (
+        continuous = dat_cont,
+        events_continuous = evts,
+        epoched = dat_epoched,
+        events_epoched = evts_epoched,
+        times = times,
+    )
 end
 
 
 function simulate_cases(
     cfg::SimulationConfig;
-    continuous::Bool = false,
     seed::Int = 12,
 )
-    simulator = continuous ? simulate_continuous_events : simulate_condition_events
-
     return (
-        clean = simulator(cfg; confounded = false, overlap = false, seed = seed,),
-        overlap = simulator(cfg; confounded = false, overlap = true, seed = seed,),
-        confounded = simulator(cfg; confounded = true, overlap = false, seed = seed,),
-        both = simulator(cfg; confounded = true, overlap = true, seed = seed,),
+        clean = simulator(cfg; confound = false, overlap = false, seed = seed,),
+        overlap = simulator(cfg; confound = false, overlap = true, seed = seed,),
+        confound = simulator(cfg; confound = true, overlap = false, seed = seed,),
+        both = simulator(cfg; confound = true, overlap = true, seed = seed,),
     )
 end
