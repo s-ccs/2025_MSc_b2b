@@ -1,5 +1,5 @@
 include("pipelines/standard_decoding.jl")
-# include("pipelines/rerp_decoding.jl")
+include("pipelines/rerp_decoding.jl")
 include("pipelines/plain_b2b.jl")
 
 
@@ -10,7 +10,7 @@ function run_debug_pipelines(
     cross_val_reps::Int = 3, 
 )
     standard = run_standard_decoding(cfg, cases;target = target,)
-    # rerp = run_rerp_decoding(cfg, cases; target = target,)
+    rerp = run_rerp_decoding(cfg, cases; target = target,)
     plain_b2b = run_plain_b2b(cfg, cases; target = target,)
 
     return (
