@@ -146,12 +146,14 @@ gradually building up:
 
 ### Next
 
-**🚩 Implement the two-step overlap-corrected B2B pipeline:**
+> [!IMPORTANT]
+> **🚩 Implement the two-step overlap-corrected B2B pipeline:**
+> `continuous EEG → rERP overlap correction → reconstructed single trials → B2B`
+>
+>
+>** ❗Main open question:**  
+>How should the rERP model be used to reconstruct corrected single-trial >epochs that can then be passed into the existing plain B2B pipeline?
 
-`continuous EEG → rERP overlap correction → reconstructed single trials → B2B`
-
-** ❗Main open question:**  
-How should the rERP model be used to reconstruct corrected single-trial epochs that can then be passed into the existing plain B2B pipeline?
 
 ### How to get started with the current simulation
 - Open `notebooks/debug_plain_b2b.jl` in Pluto. 
