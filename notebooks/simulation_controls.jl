@@ -72,7 +72,7 @@ function simulation_controls()
         $(Child(
             :β0_n170,
             PlutoUI.Slider(
-                0.0:0.05:10.0;
+                0.0:1.0:10.0;
                 default = 5.0,
                 show_value = true,
             ),
@@ -82,7 +82,7 @@ function simulation_controls()
         $(Child(
             :β0_p300,
             PlutoUI.Slider(
-                0.0:0.05:10.0;
+                0.0:1.0:10.0;
                 default = 5.0,
                 show_value = true,
             ),
@@ -92,7 +92,7 @@ function simulation_controls()
         $(Child(
             :β_condition,
             PlutoUI.Slider(
-                0.0:0.05:10.0;
+                0.0:1.0:10.0;
                 default = 3.0,
                 show_value = true,
             ),
