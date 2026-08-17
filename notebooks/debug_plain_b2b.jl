@@ -20,6 +20,7 @@ end
 begin
     import Pkg
     Pkg.activate(joinpath(@__DIR__, ".."))
+	Pkg.instantiate()
 end
 
 # ╔═╡ 7b55f4b4-c299-43eb-b125-7d4219cef384

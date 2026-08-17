@@ -152,3 +152,7 @@ gradually building up:
 
 ** ❗Main open question:**  
 How should the rERP model be used to reconstruct corrected single-trial epochs that can then be passed into the existing plain B2B pipeline?
+
+### How to get started with the current simulation
+- Open `notebooks/debug_plain_b2b.jl` in Pluto. 
+- The notebook activates and instantiates the repository environment automatically, i guess......
