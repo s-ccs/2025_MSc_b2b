@@ -78,14 +78,14 @@ plain_b2b =
     )
 
 # ╔═╡ 9407e5ce-d6af-44f2-a253-847e51be6c1c
-fig_plain_b2b_condition_with_beta0_p300 = MScB2B.plot_b2b_grid(
+fig_plain_b2b_condition_no_p300 = MScB2B.plot_b2b_grid(
     plain_b2b.score_tables,
     cfg;
     target = :condition,
 )
 
 # ╔═╡ 4eb6bb0e-5dad-4948-85ab-1724428be360
-fig_plain_b2b_continuous_with_beta0_p300 = MScB2B.plot_b2b_grid(
+fig_plain_b2b_continuous_no_p300 = MScB2B.plot_b2b_grid(
     plain_b2b.score_tables,
     cfg;
     target = :continuous,
@@ -141,7 +141,7 @@ begin
 end
 
 # ╔═╡ c4905ea9-4f24-43d4-bdda-7d3d0ec2f1e9
-clean_condition_signed_b2b_with_beta0_p300 = lines(
+clean_condition_signed_b2b_no_p300 = lines(
     b2b_condition_clean.time,
     b2b_condition_clean.estimate;
     axis = (
@@ -152,29 +152,23 @@ clean_condition_signed_b2b_with_beta0_p300 = lines(
 )
 
 # ╔═╡ c1da4a39-547c-4a07-bac0-1d85e403aacf
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	save(
-	    "figures/fig_plain_b2b_condition_with_beta0_p300.svg",
-	     fig_plain_b2b_condition_with_beta0_p300,
+	    "figures/fig_plain_b2b_condition_no_p300.svg",
+	     fig_plain_b2b_condition_no_p300,
 	)
 	
 	save(
-		"figures/clean_condition_signed_b2b_with_beta0_p300.svg",
-		clean_condition_signed_b2b_with_beta0_p300,
+		"figures/clean_condition_signed_b2b_no_p300.svg",
+		clean_condition_signed_b2b_no_p300,
 	)
 
 	save(
-		"figures/fig_plain_b2b_continuous_with_beta0_p300.svg",
-		fig_plain_b2b_continuous_with_beta0_p300,
+		"figures/fig_plain_b2b_continuous_no_p300.svg",
+		fig_plain_b2b_continuous_no_p300,
 	)
 
-	save(
-		"clean_common_vs_condition_with_beta0_p300.pdf", 
-		fig_signal,)
 end
-  ╠═╡ =#
 
 # ╔═╡ 847dc5b8-6edc-4ba9-a50a-57e05d9f8ee7
 clean_1ch = merge(
@@ -444,8 +438,12 @@ let
     )
 
     axislegend(ax1)
-
+	
     fig_signal
+
+	save(
+		"clean_common_vs_condition_no_p300.svg", 
+		fig_signal,)
 end
 
 # ╔═╡ c85cc3f8-d4cb-432a-bb7a-30530cd4d0ef
