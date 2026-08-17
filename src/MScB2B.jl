@@ -26,4 +26,5 @@ export run_plain_b2b
 export run_debug_pipelines
 
 export plot_standard_decoding_grid
+export fit_rerp_case
 end

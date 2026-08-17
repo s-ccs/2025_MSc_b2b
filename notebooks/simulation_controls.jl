@@ -67,9 +67,20 @@ function simulation_controls()
             ),
         ))
 
-        **Common ERP intercept (β₀):**
+        
+        **N170 intercept (β₀_n170):**
         $(Child(
-            :β0,
+            :β0_n170,
+            PlutoUI.Slider(
+                0.0:0.05:10.0;
+                default = 5.0,
+                show_value = true,
+            ),
+        ))
+
+        **P300 intercept (β₀_p300):**
+        $(Child(
+            :β0_p300,
             PlutoUI.Slider(
                 0.0:0.05:10.0;
                 default = 5.0,
