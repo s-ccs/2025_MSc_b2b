@@ -14,7 +14,7 @@ function fit_plain_b2b_case(
 
     formula_b2b = @formula(0 ~ 1 + condition + continuous)
 
-    design_b2b = [Any => (formula_b2b, times,)]
+    design_b2b = ["stimulus" => (formula_b2b, times,)]
     solver_b2b = (X, y) -> UnfoldDecode.solver_b2b(X, y; cross_val_reps = cross_val_reps,)
 
     return Unfold.fit(UnfoldDecode.UnfoldModel, design_b2b, evts, dat; solver = solver_b2b,)
@@ -40,7 +40,16 @@ function run_plain_b2b(
         )
 
         result = DataFrame(Unfold.coeftable(uf_b2b))
+
+        # keep raw B2B estimate for debugging
+		result[!, :estimate_singed] = copy(result.estimate)
+
+		# B2B has no sign
+		result.estimate .= abs.(result.estimate)
+
+		# remove intercept
         result = result[result.coefname .!= "(intercept)", :]
+        
         result[!, :case] = fill(String(case_name), nrow(result))
 
         push!(score_tables, result)

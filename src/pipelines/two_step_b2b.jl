@@ -1,110 +1,102 @@
-function fit_two_step_b2b_cases(
-    cases,
-    des_rerp;
-    eventname = "stimulus",
-    eventcolumn = :event,
+function fit_two_step_b2b_case(
+	cfg,
+	case_data;
+	cross_val_reps::Int = 3,
+) 
+	
+	dat_cont = case_data.continuous
+	evts = case_data.events_continuous
+
+
+	# Step 1: Fit rERP model to continuous EEG data
+	design_rerp = [
+		"stimulus" => (
+			@formula(0 ~ 1 + condition + continuous),
+			Unfold.firbasis(
+				τ = [-0.1, 1.0],
+				sfreq = cfg.sfreq,
+				name = "stimulus",
+			))]
+
+	uf_rerp = Unfold.fit(
+		UnfoldLinearModelContinuousTime,
+		design_rerp,
+		evts,
+		dat_cont;
+		eventcolumn = :event,
+	)
+
+	# Step 2: singletrials()
+	X_corrected = UnfoldDecode.singletrials(
+		dat_cont,
+		uf_rerp,
+		evts,
+		"stimulus",
+		:event
+	)
+
+	# Step 3: trial_level B2B design, already epoched data, use a time vector
+	times = Unfold.times(uf_rerp)[1]
+	
+	design_b2b = [
+		"stimulus" => (
+			@formula(0 ~ 1 + condition + continuous),
+			times,
+		)
+	]
+
+	b2b_solver = (X, y) -> UnfoldDecode.solver_b2b(X, y; cross_val_reps = cross_val_reps)
+
+	uf_b2b = Unfold.fit(
+		UnfoldModel,
+		design_b2b,
+		evts,
+		X_corrected;
+		solver = b2b_solver,
+	)
+
+	return (
+		rerp_model = uf_rerp,
+		corrected_trials = X_corrected,
+		b2b_fit_correted = uf_b2b,
+	)
+
+function run_two_step_b2b(
+	cfg,
+	cases;
+	cross_val_reps::Int = 3,
 )
-    result_tables = DataFrame[]
+	score_tables = DataFrame[]
+	fitted_models = Dict{Symbol, Any}()
 
-    for (case_name, (dat_cont, evts)) in pairs(cases)
+	for case_name in (:clean, :overlap, :confound, :both,)
+		case_data = getproperty(cases, case_name)
 
-		# ==========================================
-		# Step 1: rERP
-		# ==========================================
-		
-		uf_rerp = Unfold.fit(
-		    UnfoldLinearModelContinuousTime,
-		    des_rerp,
-		    evts,
-		    dat_cont;
-		    eventcolumn = eventcolumn,
+		two_step_b2b_fit = fit_two_step_b2b_case(
+			cfg,
+			case_data;
+			cross_val_reps = cross_val_reps,
 		)
-		
-		
-		# ==========================================
-		# Step 2: corrected single trials
-		# ==========================================
-		
-		dat_corrected = UnfoldDecode.singletrials(
-		    dat_cont,
-		    uf_rerp,
-		    evts,
-		    eventname,
-		    eventcolumn,
-		)
-		
-		
-		# ==========================================
-		# Step 2.5: remove incomplete boundary epochs
-		# ==========================================
-		
-		has_missing = dropdims(
-		    any(
-		        ismissing.(dat_corrected),
-		        dims = (1, 2),
-		    ),
-		    dims = (1, 2),
-		)
-		
-		good_trials = .!has_missing
-		
-		dat_corrected =
-		    Float64.(
-		        dat_corrected[:, :, good_trials]
-		    )
-		
-		evts_corrected =
-		    evts[good_trials, :]
-		
-		@assert size(dat_corrected, 3) == nrow(evts_corrected)
-		@assert count(ismissing, dat_corrected) == 0
-		
-		
-		# ==========================================
-		# Step 3: epoched B2B design
-		# ==========================================
-				times_corrected =
-		    Unfold.times(uf_rerp)[1]
-		
-		@assert length(times_corrected) ==
-		        size(dat_corrected, 2)
-		
-		des_b2b_corrected = [
-		    Any => (
-		        @formula(0 ~ 1 + condition + continuous),
-		        times_corrected,
-		    )
-		]
-		
-		
-		# ==========================================
-		# Step 4: B2B
-		# ==========================================
-		
-		uf_b2b = Unfold.fit(
-    UnfoldDecode.UnfoldModel,
-    des_b2b_corrected,
-    evts_corrected,
-    dat_corrected;
-    solver = b2b_solver,
-)
 
-        # ------------------------------------------
-        # 6. collect coefficients
-        # ------------------------------------------
+		result = DataFrame(Unfold.coeftable(two_step_b2b_fit.b2b_fit_correted))
 
-        result = coeftable(uf_b2b)
+		# keep raw B2B estimate for debugging
+		result[!, :estimate_singed] = copy(result.estimate)
 
-        result = result[
-            result.coefname .!= "(Intercept)",
-            :
-        ]
+		# B2B has no sign
+		result.estimate .= abs.(result.estimate)
 
-        result[!, :case] =
-            fill(String(case_name), nrow(result))
+		# remove intercept
+		result = result[result.coefname .!= "(intercept)", :]
 
-        push!(result_tables, result)
-    end
+		result[!, :case] = fill(String(case_name), nrow(result))
 
-    return vcat(result_tables...)
+		push!(score_tables, result)
+		fitted_models[case_name] = two_step_b2b_fit
+	end
+
+	return (
+		score_tables = vcat(score_tables...),
+		fitted_models = fitted_models,
+	)
 end

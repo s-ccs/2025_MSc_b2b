@@ -50,8 +50,6 @@ function fit_one_step_b2b_case(
     dat_cont = case_data.continuous
     evts = case_data.events_continuous
 
-    formula_b2b = @formula(0 ~ 1 + condition + continuous)
-
     design_one_step_b2b = [
         "stimulus" => (
             @formula(0 ~ 1 + condition + continuous),
@@ -63,10 +61,10 @@ function fit_one_step_b2b_case(
     solver_b2b = (X, y) -> UnfoldDecode.solver_b2b(X, y; cross_val_reps = cross_val_reps,)
     return Unfold.fit(
         UnfoldDecode.UnfoldModel,
-        design,
+        design_one_step_b2b,
         evts,
         dat_cont;
-        solver = b2b_solver
+        solver = solver_b2b
     )
 
 function run_one_step_b2b(
@@ -87,7 +85,16 @@ function run_one_step_b2b(
         )
 
         result = DataFrame(Unfold.coeftable(uf_one_step_b2b))
+
+        # keep raw B2B estimate for debugging
+		result[!, :estimate_singed] = copy(result.estimate)
+
+		# B2B has no sign
+		result.estimate .= abs.(result.estimate)
+
+		# remove intercept
         result = result[result.coefname .!= "(intercept)", :]
+        
         result[!, :case] = fill(String(case_name), nrow(result))
 
         push!(score_tables, result)
