@@ -46,11 +46,26 @@ function fit_two_step_b2b_case(
 	]
 
 	b2b_solver = (X, y) -> begin
+		# Trials without missing EEG samples
+		good_y = dropdims(
+			.!any(isming.(y), dims = (1, 2)),
+			dims = (1, 2)
+		)
 
-	X_clean, y_clean = Unfold.drop_missing_epochs(X, y)
+		# Trials without missing predictor values
+		good_X = vec(
+			.!any(ismissing.(X), dims = 2)
+		)
+
+		# Kepp only trials that are good in both EEG and predictors
+		good = good_y .& good_X
+
+		# IMPORTANT: 
+		# explicityly remove Union{Missing, Float64} element type
+		X_clean = Float64.(X[good, :, :])
+		y_clean = Float64.(y[:, :, good])
 	
-	UnfoldDecode.solver_b2b(X_clean, y_clean; cross_val_reps = cross_val_reps)
-
+		UnfoldDecode.solver_b2b(X_clean, y_clean; cross_val_reps = cross_val_reps)
 	end
 
 	uf_b2b = Unfold.fit(
