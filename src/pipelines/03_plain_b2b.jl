@@ -32,7 +32,6 @@ function run_plain_b2b(
         case_data = getproperty(cases, case_name)
 
         uf_plain_b2b = fit_plain_b2b_case(
-            cfg,
             case_data;
             cross_val_reps = cross_val_reps
         )

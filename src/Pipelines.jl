@@ -1,8 +1,8 @@
-include("pipelines/standard_decoding.jl")
-include("pipelines/rerp_decoding.jl")
-include("pipelines/plain_b2b.jl")
-include("pipelines/one_step_b2b.jl")
-include("pipelines/two_step_b2b.jl")
+include("pipelines/01_standard_decoding.jl")
+include("pipelines/02_rerp_decoding.jl")
+include("pipelines/03_plain_b2b.jl")
+include("pipelines/04_one_step_b2b.jl")
+include("pipelines/05_two_step_b2b.jl")
 
 
 function run_debug_pipelines(
