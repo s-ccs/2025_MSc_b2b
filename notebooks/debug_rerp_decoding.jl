@@ -48,8 +48,8 @@ cfg = MScB2B.SimulationConfig(
     noiselevel = sim.noiselevel,
     channel_noise_sd = sim.channel_noise_sd,
 
-    β0_n170 = sim.β0,
-    β0_p300 = sim.β0,
+    β0_n170 = sim.β0_n170,
+    β0_p300 = sim.β0_p300,
 
     β_condition = sim.β_condition,
     β_continuous = sim.β_continuous,

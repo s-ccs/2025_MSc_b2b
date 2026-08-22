@@ -27,4 +27,11 @@ export run_debug_pipelines
 
 export plot_standard_decoding_grid
 export fit_rerp_case
+
+export run_one_step_b2b
+export plot_one_step_b2b_grid
+export fit_one_step_b2b_case
+
+export run_two_step_b2b
+export fit_two_step_b2b_case
 end

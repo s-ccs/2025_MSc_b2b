@@ -37,7 +37,10 @@ function UnfoldDecode.solver_b2b(                     # when T is a number,
     #beta = permutedims(beta, [3 1 2])
 	beta  = reshape(beta, 1,:)
     modelinfo = Dict("W" => W, "E" => E, "cross_val_reps" => cross_val_reps) # no history implemented (yet?)
-    return UnfoldDecode.Unfold.LinearModelFit{eltype(beta),2}(beta, modelinfo)
+
+    # LinearModelFit{T, 2} requires a 2D array for beta
+    return UnfoldDecode.Unfold.LinearModelFit{eltype(beta),2}(estimate = beta, 
+    info = modelinfo, standarderror = similar(beta, 0, 0))
 end
 
 
@@ -66,6 +69,7 @@ function fit_one_step_b2b_case(
         dat_cont;
         solver = solver_b2b
     )
+end
 
 function run_one_step_b2b(
     cfg,
@@ -76,6 +80,10 @@ function run_one_step_b2b(
     fitted_models = Dict{Symbol, Any}()
 
     for case_name in (:clean, :overlap, :confound, :both,)
+
+        println("Startinng one-step B2B: $case_name")
+        flush(stdout)
+
         case_data = getproperty(cases, case_name)
 
         uf_one_step_b2b = fit_one_step_b2b_case(
@@ -87,16 +95,24 @@ function run_one_step_b2b(
         result = DataFrame(Unfold.coeftable(uf_one_step_b2b))
 
         # keep raw B2B estimate for debugging
-		result[!, :estimate_singed] = copy(result.estimate)
+		result[!, :estimate_signed] = copy(result.estimate)
 
 		# B2B has no sign
 		result.estimate .= abs.(result.estimate)
 
 		# remove intercept
-        result = result[result.coefname .!= "(intercept)", :]
+        result = result[result.coefname .!= "(Intercept)", :]
         
         result[!, :case] = fill(String(case_name), nrow(result))
 
         push!(score_tables, result)
-        fitted_models[case_name] = uf_b2b
+        fitted_models[case_name] = uf_one_step_b2b
+
+        println("Finished one-step B2B: $case_name")
+        flush(stdout)
     end
+    return (
+        score_tables = vcat(score_tables...),
+        fitted_models = fitted_models,
+    )
+end

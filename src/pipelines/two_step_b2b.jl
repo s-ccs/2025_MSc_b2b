@@ -45,7 +45,13 @@ function fit_two_step_b2b_case(
 		)
 	]
 
-	b2b_solver = (X, y) -> UnfoldDecode.solver_b2b(X, y; cross_val_reps = cross_val_reps)
+	b2b_solver = (X, y) -> begin
+
+	X_clean, y_clean = Unfold.drop_missing_epochs(X, y)
+	
+	UnfoldDecode.solver_b2b(X_clean, y_clean; cross_val_reps = cross_val_reps)
+
+	end
 
 	uf_b2b = Unfold.fit(
 		UnfoldModel,
@@ -58,8 +64,9 @@ function fit_two_step_b2b_case(
 	return (
 		rerp_model = uf_rerp,
 		corrected_trials = X_corrected,
-		b2b_fit_correted = uf_b2b,
+		b2b_fit_corrected = uf_b2b,
 	)
+end 
 
 function run_two_step_b2b(
 	cfg,
@@ -81,13 +88,13 @@ function run_two_step_b2b(
 		result = DataFrame(Unfold.coeftable(two_step_b2b_fit.b2b_fit_correted))
 
 		# keep raw B2B estimate for debugging
-		result[!, :estimate_singed] = copy(result.estimate)
+		result[!, :estimate_signed] = copy(result.estimate)
 
 		# B2B has no sign
 		result.estimate .= abs.(result.estimate)
 
 		# remove intercept
-		result = result[result.coefname .!= "(intercept)", :]
+		result = result[result.coefname .!= "(Intercept)", :]
 
 		result[!, :case] = fill(String(case_name), nrow(result))
 

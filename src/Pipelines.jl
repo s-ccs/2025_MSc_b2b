@@ -1,6 +1,8 @@
 include("pipelines/standard_decoding.jl")
 include("pipelines/rerp_decoding.jl")
 include("pipelines/plain_b2b.jl")
+include("pipelines/one_step_b2b.jl")
+include("pipelines/two_step_b2b.jl")
 
 
 function run_debug_pipelines(

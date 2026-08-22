@@ -488,6 +488,113 @@ let
     fig
 end
 
+# ╔═╡ 8d931c76-2cf0-4ba6-b165-3a2201e0b4db
+let
+    dat = cases.clean.epoched
+
+    dat_centered = dat .- StatsModels.mean(dat; dims = 3)
+
+    (
+        original_size = size(dat),
+        centered_size = size(dat_centered),
+        original_grand_mean = maximum(abs.(StatsModels.mean(dat; dims = 3))),
+        centered_grand_mean = maximum(abs.(StatsModels.mean(dat_centered; dims = 3))),
+    )
+end
+
+# ╔═╡ 6ff06cb2-391c-4778-8c07-72b1c3a64fc5
+clean_centered = let
+    dat = cases.clean.epoched
+    dat_centered = dat .- StatsModels.mean(dat; dims = 3)
+
+    merge(
+        cases.clean,
+        (; epoched = dat_centered),
+    )
+end
+
+# ╔═╡ e0495416-0894-43bf-a03d-cfa076e03c8d
+uf_clean_centered = MScB2B.fit_plain_b2b_case(
+    cfg,
+    clean_centered;
+    cross_val_reps = 3,
+)
+
+# ╔═╡ 38d6762c-fabd-4763-b72e-7ac90936321e
+tbl_clean_centered = Unfold.coeftable(uf_clean_centered)
+
+# ╔═╡ 970b86a0-01cb-4e6d-a490-f82371a8062d
+let
+    # -------------------------
+    # Original clean B2B
+    # -------------------------
+    uf_original = MScB2B.fit_plain_b2b_case(
+        cfg,
+        cases.clean;
+        cross_val_reps = 3,
+    )
+
+    tbl_original = DataFrame(Unfold.coeftable(uf_original))
+    tbl_original[!, :data] .= "Original"
+
+    # -------------------------
+    # Trial-centered clean B2B
+    # -------------------------
+    dat = cases.clean.epoched
+    dat_centered = dat .- StatsModels.mean(dat; dims = 3)
+
+    clean_centered = merge(
+        cases.clean,
+        (; epoched = dat_centered),
+    )
+
+    uf_centered = MScB2B.fit_plain_b2b_case(
+        cfg,
+        clean_centered;
+        cross_val_reps = 3,
+    )
+
+    tbl_centered = DataFrame(Unfold.coeftable(uf_centered))
+    tbl_centered[!, :data] .= "Trial-centered"
+
+    # -------------------------
+    # Combine + condition only
+    # -------------------------
+    tbl = vcat(tbl_original, tbl_centered)
+
+    tbl_condition = filter(
+        row -> occursin("condition", String(row.coefname)),
+        tbl,
+    )
+
+    # -------------------------
+    # Plot
+    # -------------------------
+    fig = Figure(size = (800, 450))
+    ax = Axis(
+        fig[1, 1],
+        title = "Clean condition B2B: original vs trial-centered",
+        xlabel = "Time [s]",
+        ylabel = "B2B estimate",
+    )
+
+    for label in ["Original", "Trial-centered"]
+        sub = filter(row -> row.data == label, tbl_condition)
+
+        lines!(
+            ax,
+            sub.time,
+            sub.estimate;
+            label = label,
+            linewidth = 2,
+        )
+    end
+
+    axislegend(ax)
+
+    fig
+end
+
 # ╔═╡ Cell order:
 # ╠═8342e65e-a91b-4124-9f4f-9ebcb501fbe2
 # ╠═7b55f4b4-c299-43eb-b125-7d4219cef384
@@ -514,3 +621,8 @@ end
 # ╠═63526444-05f0-42d4-ad11-09fdfb846a77
 # ╠═c30bbd00-a849-446b-a6ad-a841e984fe7b
 # ╠═c85cc3f8-d4cb-432a-bb7a-30530cd4d0ef
+# ╠═8d931c76-2cf0-4ba6-b165-3a2201e0b4db
+# ╠═6ff06cb2-391c-4778-8c07-72b1c3a64fc5
+# ╠═e0495416-0894-43bf-a03d-cfa076e03c8d
+# ╠═38d6762c-fabd-4763-b72e-7ac90936321e
+# ╠═970b86a0-01cb-4e6d-a490-f82371a8062d
