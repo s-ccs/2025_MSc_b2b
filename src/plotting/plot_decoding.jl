@@ -1,152 +1,172 @@
+# ========================================
+# Standard decoding plotting
+# ========================================
 
 
-# ========================================
-# Standard_decoding_plot
-# ========================================
+# ============================================================
+# Extract one decoding curve
+# ============================================================
 
 function _sd_get_curve(
-	scores::DataFrame,
-	case_name::AbstractString;
-	sfreq::Real,
+    scores::AbstractDataFrame,
+    case_name::AbstractString;
+    sfreq::Real
 )
-	required_columns = Set([:timepoint, :r, :case])
-	available_columns = Set(propertynames(scores))
+    required_columns = Set([:r, :case])
+    available_columns = Set(propertynames(scores))
 
-	issubset(required_columns, available_columns) ||
-		error(
-			"`scores` must contain :timepoint, :r and :case. " *
-			"Available columns: $(propertynames(scores))"
-		)
+    issubset(required_columns, available_columns) ||
+        error(
+            "`scores` must contain :r and :case. " *
+            "Available columns: $(propertynames(scores))"
+        )
 
-	case_mask =
-		string.(scores.case) .== case_name
+    case_mask =
+        string.(scores.case) .== case_name
 
+    any(case_mask) ||
+        error(
+            "No rows found for case = \"$case_name\". " *
+            "Available cases: $(unique(string.(scores.case)))"
+        )
 
-	# rERP results have a real :time column
-	if :time in propertynames(scores)
-		sub = scores[
-			case_mask,
-			[:time, :r],
-		]
+    # --------------------------------------------------------
+    # Prefer real time if available
+    # --------------------------------------------------------
 
-		isempty(sub) && 
-			error("No rows found for case = \"$case_name\".")
+    if :time in propertynames(scores)
 
-		sort!(sub, :time)
+        sub = DataFrame(
+            scores[
+                case_mask,
+                [:time, :r]
+            ]
+        )
 
-		return Float64.(sub.time), Float16.(sub.r)
+        sort!(sub, :time)
 
-	# Standard decoding uses :timepoint
-	elseif :timepoint in propertynames(scores)
-		
-		sub = scores[
-			case_mask,
-			[:timepoint, :r],
-		]
+        return (
+            Float64.(sub.time),
+            Float64.(sub.r)
+        )
 
-		isempty(sub) &&
-			error(
-				"No rows found for case = \"$case_name\". " *
-				"Available cases: $(unique(string.(scores.case)))"
-			)
+    # --------------------------------------------------------
+    # Otherwise convert timepoint to seconds
+    # --------------------------------------------------------
 
-		sort!(sub, :timepoint)
+    elseif :timepoint in propertynames(scores)
 
-		time = 
-			(Float64.(sub.timepoint) .- 1.0) ./ sfreq
+        sub = DataFrame(
+            scores[
+                case_mask,
+                [:timepoint, :r]
+            ]
+        )
 
-		return time, Float64.(sub.r)
+        sort!(sub, :timepoint)
 
-	else 
-		error(
-			"`scores` must contain either :time or :timepoint."
-		)
-	end 
-	
-	# Convert sample indices to seconds.
-	# timepoint 1 becomes time 0 s.
-	time =
-		(Float64.(sub.timepoint) .- 1.0) ./ sfreq
+        time =
+            (Float64.(sub.timepoint) .- 1.0) ./ sfreq
 
-	values =
-		Float64.(sub.r)
+        return (
+            time,
+            Float64.(sub.r)
+        )
 
-	return time, values
+    else
+        error(
+            "`scores` must contain either :time or :timepoint."
+        )
+    end
 end
 
 
 # ============================================================
-# Create the corresponding ground-truth effect
+# Trim curve to plotting window
+# ============================================================
+
+function _sd_trim_curve(
+    time::AbstractVector,
+    values::AbstractVector,
+    x_window
+)
+    x_min, x_max = x_window
+
+    mask =
+        (time .>= x_min) .&
+        (time .<= x_max)
+
+    return (
+        Float64.(time[mask]),
+        Float64.(values[mask])
+    )
+end
+
+
+# ============================================================
+# Create ground-truth target effect
 # ============================================================
 
 function _sd_true_effect(
-	cfg,
-	target::Symbol,
-	n_timepoints::Integer;
-	target_peak::Real = 0.45,
-	use_magnitude::Bool = true,
+    cfg,
+    target::Symbol;
+    target_peak::Real = 0.45,
+    use_magnitude::Bool = true
 )
-	raw_effect, label =
-		if target == :condition
-			(
-				cfg.β_condition .*
-				UnfoldSim.n170(; sfreq = cfg.sfreq),
+    raw_effect, label =
+        if target == :condition
 
-				use_magnitude ?
-				"True N170 condition-effect magnitude (scaled)" :
-				"True N170 condition effect (scaled)",
-			)
+            (
+                cfg.β_condition .*
+                    UnfoldSim.n170(; sfreq = cfg.sfreq),
 
-		elseif target == :continuous
-			(
-				cfg.β_continuous .*
-				UnfoldSim.p300(; sfreq = cfg.sfreq),
+                "Ground-truth N170 effect waveform (scaled)"
+            )
 
-				use_magnitude ?
-				"True P300 continuous-effect magnitude (scaled)" :
-				"True P300 continuous effect (scaled)",
-			)
+        elseif target == :continuous
 
-		else
-			error(
-				"Unknown target: $target. " *
-				"Use :condition or :continuous."
-			)
-		end
+            (
+                cfg.β_continuous .*
+                    UnfoldSim.p300(; sfreq = cfg.sfreq),
 
-	raw_effect =
-		Float64.(raw_effect)
+                "Ground-truth P300 effect waveform (scaled)"
+            )
 
-	# For decoding correlation, the temporal magnitude is generally
-	# more directly comparable than the signed ERP polarity.
-	effect_for_plot =
-		use_magnitude ?
-		abs.(raw_effect) :
-		raw_effect
+        else
+            error(
+                "Unknown target: $target. " *
+                "Use :condition or :continuous."
+            )
+        end
 
-	# Protect against different waveform/data lengths.
-	n =
-		min(
-			Int(n_timepoints),
-			length(effect_for_plot),
-		)
+    raw_effect =
+        Float64.(raw_effect)
 
-	effect_for_plot =
-		effect_for_plot[1:n]
+    # Decoding correlation has no ERP polarity,
+    # so magnitude is easier to compare visually.
+    effect_for_plot =
+        use_magnitude ?
+            abs.(raw_effect) :
+            raw_effect
 
-	time =
-		(0:n-1) ./ cfg.sfreq
+    maximum_absolute =
+        maximum(abs.(effect_for_plot))
 
-	maximum_absolute =
-		maximum(abs.(effect_for_plot))
+    scaled_effect =
+        maximum_absolute == 0 ?
+            zeros(Float64, length(effect_for_plot)) :
+            Float64(target_peak) .*
+            effect_for_plot ./ maximum_absolute
 
-	scaled_effect =
-		maximum_absolute == 0 ?
-		zeros(Float64, n) :
-		Float64(target_peak) .*
-		effect_for_plot ./ maximum_absolute
+    # ERP waveform starts at stimulus onset = 0 s
+    time =
+        (0:length(scaled_effect)-1) ./ cfg.sfreq
 
-	return time, scaled_effect, label
+    return (
+        Float64.(time),
+        Float64.(scaled_effect),
+        label
+    )
 end
 
 
@@ -155,64 +175,64 @@ end
 # ============================================================
 
 function _sd_make_axis(
-	position;
-	title::AbstractString,
-	ylabel::AbstractString,
-	show_x::Bool,
-	show_y::Bool,
-	x_limits,
-	y_limits,
-	x_ticks,
+    position;
+    title::AbstractString,
+    ylabel::AbstractString,
+    show_x::Bool,
+    show_y::Bool,
+    x_limits,
+    y_limits,
+    x_ticks
 )
-	ax = Axis(
-		position;
+    ax = Axis(
+        position;
 
-		title = title,
-		titlesize = 16,
-		titlefont = :bold,
-		titlegap = 8,
+        title = title,
+        titlesize = 16,
+        titlefont = :bold,
+        titlegap = 8,
 
-		xlabel = show_x ? "Time [s]" : "",
-		ylabel = show_y ? ylabel : "",
+        xlabel = show_x ? "Time [s]" : "",
+        ylabel = show_y ? ylabel : "",
 
-		xlabelsize = 14,
-		ylabelsize = 14,
+        xlabelsize = 14,
+        ylabelsize = 14,
 
-		xticklabelsize = 12,
-		yticklabelsize = 12,
+        xticklabelsize = 12,
+        yticklabelsize = 12,
 
-		xticks = x_ticks,
+        xticks = x_ticks,
 
-		xgridvisible = false,
-		ygridvisible = false,
+        xgridvisible = false,
+        ygridvisible = false,
 
-		topspinevisible = false,
-		rightspinevisible = false,
+        topspinevisible = false,
+        rightspinevisible = false,
 
-		xticklabelsvisible = show_x,
-		xticksvisible = show_x,
-		xlabelvisible = show_x,
+        xticklabelsvisible = show_x,
+        xticksvisible = show_x,
+        xlabelvisible = show_x,
 
-		yticklabelsvisible = show_y,
-		yticksvisible = show_y,
-		ylabelvisible = show_y,
+        yticklabelsvisible = show_y,
+        yticksvisible = show_y,
+        ylabelvisible = show_y,
 
-		backgroundcolor = :white,
-	)
+        backgroundcolor = :white
+    )
 
-	xlims!(ax, x_limits...)
-	ylims!(ax, y_limits...)
+    xlims!(ax, x_limits...)
+    ylims!(ax, y_limits...)
 
-	# Zero-correlation reference line
-	hlines!(
-		ax,
-		[0.0];
-		color = (:gray45, 0.55),
-		linestyle = :dash,
-		linewidth = 1.0,
-	)
+    # Zero correlation reference line
+    hlines!(
+        ax,
+        [0.0];
+        color = (:gray45, 0.55),
+        linestyle = :dash,
+        linewidth = 1.0
+    )
 
-	return ax
+    return ax
 end
 
 
@@ -221,465 +241,569 @@ end
 # ============================================================
 
 function plot_standard_decoding_grid(
-	scores::DataFrame,
-	cfg;
-	target::Symbol,
-	true_effect_peak::Real = 0.45,
-	use_effect_magnitude::Bool = true,
+    scores::AbstractDataFrame,
+    cfg;
+    target::Symbol,
+    x_window = (-0.1, 0.43),
+    true_effect_peak::Real = 0.45,
+    use_effect_magnitude::Bool = true,
+    show_true_effect::Bool = true,
+    true_effect_cases = ("overlap", "confound")
 )
-	# --------------------------------------------------------
-	# Target-specific labels
-	# --------------------------------------------------------
-
-	figure_title,
-	ylabel_text,
-	bottom_left_title =
-		if target == :condition
-			(
-				"Condition decoding",
-				"corr(predicted condition, true condition)",
-				"Confound and true condition effect",
-			)
-
-		elseif target == :continuous
-			(
-				"Continuous decoding",
-				"corr(predicted continuous, true continuous)",
-				"Confound and true continuous effect",
-			)
-
-		else
-			error(
-				"Unknown target: $target. " *
-				"Use :condition or :continuous."
-			)
-		end
-
-
-	# --------------------------------------------------------
-	# Fixed visual identity
-	#
-	# Only `both` is dashed.
-	# --------------------------------------------------------
-
-	case_colors = Dict(
-		"clean"    => :dodgerblue,
-		"overlap"  => :darkorange,
-		"confound" => :seagreen,
-		"both"     => :deeppink,
-	)
-
-	case_linestyles = Dict(
-		"clean"    => :solid,
-		"overlap"  => :solid,
-		"confound" => :solid,
-		"both"     => :dash,
-	)
-
-	case_linewidths = Dict(
-		"clean"    => 2.6,
-		"overlap"  => 2.6,
-		"confound" => 2.6,
-		"both"     => 2.8,
-	)
-
-	true_effect_color = :black
-	true_effect_linestyle = :dashdot
-	true_effect_linewidth = 2.2
-
-
-	# --------------------------------------------------------
-	# Extract four decoding curves
-	# --------------------------------------------------------
-
-	t_clean, y_clean =
-		_sd_get_curve(
-			scores,
-			"clean";
-			sfreq = cfg.sfreq,
-		)
-
-	t_overlap, y_overlap =
-		_sd_get_curve(
-			scores,
-			"overlap";
-			sfreq = cfg.sfreq,
-		)
-
-	t_confound, y_confound =
-		_sd_get_curve(
-			scores,
-			"confound";
-			sfreq = cfg.sfreq,
-		)
-
-	t_both, y_both =
-		_sd_get_curve(
-			scores,
-			"both";
-			sfreq = cfg.sfreq,
-		)
-
-
-	# --------------------------------------------------------
-	# Corresponding ground-truth effect
-	# --------------------------------------------------------
-
-	n_timepoints =
-		Int(maximum(scores.timepoint))
-
-	t_true,
-	y_true,
-	true_effect_label =
-		_sd_true_effect(
-			cfg,
-			target,
-			n_timepoints;
-			target_peak = true_effect_peak,
-			use_magnitude = use_effect_magnitude,
-		)
-
 
-	# --------------------------------------------------------
-	# Shared x limits
-	# --------------------------------------------------------
+    # --------------------------------------------------------
+    # Target-specific labels
+    # --------------------------------------------------------
+
+    figure_title, ylabel_text =
+        if target == :condition
+
+            (
+                "Condition decoding",
+                "corr(predicted condition, true condition)"
+            )
+
+        elseif target == :continuous
+
+            (
+                "Continuous decoding",
+                "corr(predicted continuous, true continuous)"
+            )
+
+        else
+            error(
+                "Unknown target: $target. " *
+                "Use :condition or :continuous."
+            )
+        end
+
+
+    # --------------------------------------------------------
+    # Visual identity
+    # --------------------------------------------------------
+
+    case_colors = Dict(
+        "clean"    => :dodgerblue,
+        "overlap"  => :darkorange,
+        "confound" => :seagreen,
+        "both"     => :deeppink
+    )
+
+    case_linestyles = Dict(
+        "clean"    => :solid,
+        "overlap"  => :solid,
+        "confound" => :solid,
+        "both"     => :dash
+    )
+
+    case_linewidths = Dict(
+        "clean"    => 2.6,
+        "overlap"  => 2.6,
+        "confound" => 2.6,
+        "both"     => 2.8
+    )
+
+    true_effect_color = :black
+    true_effect_linestyle = :dashdot
+    true_effect_linewidth = 2.2
+
+
+    # --------------------------------------------------------
+    # Extract four decoding curves
+    # --------------------------------------------------------
+
+    t_clean, y_clean =
+        _sd_get_curve(
+            scores,
+            "clean";
+            sfreq = cfg.sfreq
+        )
+
+    t_overlap, y_overlap =
+        _sd_get_curve(
+            scores,
+            "overlap";
+            sfreq = cfg.sfreq
+        )
+
+    t_confound, y_confound =
+        _sd_get_curve(
+            scores,
+            "confound";
+            sfreq = cfg.sfreq
+        )
+
+    t_both, y_both =
+        _sd_get_curve(
+            scores,
+            "both";
+            sfreq = cfg.sfreq
+        )
+
+
+    # --------------------------------------------------------
+    # Trim decoding curves to plotting window
+    # --------------------------------------------------------
+
+    t_clean, y_clean =
+        _sd_trim_curve(
+            t_clean,
+            y_clean,
+            x_window
+        )
+
+    t_overlap, y_overlap =
+        _sd_trim_curve(
+            t_overlap,
+            y_overlap,
+            x_window
+        )
+
+    t_confound, y_confound =
+        _sd_trim_curve(
+            t_confound,
+            y_confound,
+            x_window
+        )
+
+    t_both, y_both =
+        _sd_trim_curve(
+            t_both,
+            y_both,
+            x_window
+        )
+
+
+    # --------------------------------------------------------
+    # Ground-truth effect
+    # --------------------------------------------------------
+
+    t_true,
+    y_true,
+    true_effect_label =
+        _sd_true_effect(
+            cfg,
+            target;
+            target_peak = true_effect_peak,
+            use_magnitude = use_effect_magnitude
+        )
+
+    t_true, y_true =
+        _sd_trim_curve(
+            t_true,
+            y_true,
+            x_window
+        )
+
+
+    # --------------------------------------------------------
+    # Shared x limits
+    # --------------------------------------------------------
+
+    x_min, x_max =
+        Float64.(x_window)
+
+    x_limits =
+        (x_min, x_max)
+
+        x_ticks = (
+            [-0.1, 0.0, 0.1, 0.2, 0.3, 0.4],
+            ["-0.1", "0", "0.1", "0.2", "0.3", "0.4"]
+        )
 
-	x_min = 0.0
-
-	x_max =
-		maximum(
-			[
-				maximum(t_clean),
-				maximum(t_overlap),
-				maximum(t_confound),
-				maximum(t_both),
-			]
-		)
+
+    # --------------------------------------------------------
+    # Shared y limits
+    # Only use visible data
+    # --------------------------------------------------------
+
+    all_y_values =
+        vcat(
+            y_clean,
+            y_overlap,
+            y_confound,
+            y_both
+        )
 
-	x_limits =
-		(x_min, x_max)
+    if show_true_effect
+        all_y_values =
+            vcat(
+                all_y_values,
+                y_true
+            )
+    end
 
-	x_ticks =
-		collect(
-			range(
-				x_min,
-				x_max;
-				length = 5,
-			)
-		)
+    all_y_values =
+        all_y_values[
+            isfinite.(all_y_values)
+        ]
 
+    isempty(all_y_values) &&
+        error(
+            "No finite decoding scores were found " *
+            "inside x_window = $x_window."
+        )
 
-	# --------------------------------------------------------
-	# Shared y limits
-	# --------------------------------------------------------
+    y_min =
+        minimum(all_y_values)
 
-	all_decoding_values =
-		Float64.(scores.r)
+    y_max =
+        maximum(all_y_values)
 
-	all_decoding_values =
-		all_decoding_values[
-			isfinite.(all_decoding_values)
-		]
+    y_span =
+        y_max - y_min
 
-	isempty(all_decoding_values) &&
-		error("No finite decoding scores were found.")
+    y_padding =
+        y_span == 0 ?
+            0.1 :
+            0.06 * y_span
 
-	all_y_values =
-		vcat(
-			all_decoding_values,
-			y_true,
-		)
+    y_limits = (
+        y_min - y_padding,
+        y_max + y_padding
+    )
 
-	y_min =
-		minimum(all_y_values)
 
-	y_max =
-		maximum(all_y_values)
+    # --------------------------------------------------------
+    # Figure and four axes
+    # --------------------------------------------------------
 
-	y_span =
-		y_max - y_min
+    fig = Figure(
+        size = (1080, 800),
+        backgroundcolor = :white
+    )
 
-	y_padding =
-		y_span == 0 ?
-		0.1 :
-		0.06 * y_span
 
-	y_limits = (
-		y_min - y_padding,
-		y_max + y_padding,
-	)
+    ax_clean = _sd_make_axis(
+        fig[1, 1];
 
+        title = "Clean",
+        ylabel = ylabel_text,
 
-	# --------------------------------------------------------
-	# Figure and four axes
-	# --------------------------------------------------------
+        show_x = false,
+        show_y = true,
 
-	fig = Figure(
-		size = (1080, 800),
-		backgroundcolor = :white,
-	)
+        x_limits = x_limits,
+        y_limits = y_limits,
+        x_ticks = x_ticks
+    )
 
-	ax_clean = _sd_make_axis(
-		fig[1, 1];
 
-		title = "Clean",
-		ylabel = ylabel_text,
+    ax_overlap = _sd_make_axis(
+        fig[1, 2];
 
-		show_x = false,
-		show_y = true,
+        title = "Overlap",
+        ylabel = ylabel_text,
 
-		x_limits = x_limits,
-		y_limits = y_limits,
-		x_ticks = x_ticks,
-	)
-
-	ax_overlap = _sd_make_axis(
-		fig[1, 2];
+        show_x = false,
+        show_y = false,
 
-		title = "Overlap",
-		ylabel = ylabel_text,
+        x_limits = x_limits,
+        y_limits = y_limits,
+        x_ticks = x_ticks
+    )
 
-		show_x = false,
-		show_y = false,
 
-		x_limits = x_limits,
-		y_limits = y_limits,
-		x_ticks = x_ticks,
-	)
+    ax_confound = _sd_make_axis(
+        fig[2, 1];
 
-	ax_confound_true = _sd_make_axis(
-		fig[2, 1];
+        title = "Confound",
+        ylabel = ylabel_text,
 
-		title = bottom_left_title,
-		ylabel = ylabel_text,
-
-		show_x = true,
-		show_y = true,
+        show_x = true,
+        show_y = true,
 
-		x_limits = x_limits,
-		y_limits = y_limits,
-		x_ticks = x_ticks,
-	)
-
-	ax_biased_cases = _sd_make_axis(
-		fig[2, 2];
-
-		title = "Overlap, Confound, and Both",
-		ylabel = ylabel_text,
-
-		show_x = true,
-		show_y = false,
-
-		x_limits = x_limits,
-		y_limits = y_limits,
-		x_ticks = x_ticks,
-	)
+        x_limits = x_limits,
+        y_limits = y_limits,
+        x_ticks = x_ticks
+    )
 
 
-	# --------------------------------------------------------
-	# Top-left: clean only
-	# --------------------------------------------------------
-
-	lines!(
-		ax_clean,
-		t_clean,
-		y_clean;
-
-		color = case_colors["clean"],
-		linestyle = case_linestyles["clean"],
-		linewidth = case_linewidths["clean"],
-	)
-
-
-	# --------------------------------------------------------
-	# Top-right: overlap only
-	# --------------------------------------------------------
-
-	lines!(
-		ax_overlap,
-		t_overlap,
-		y_overlap;
-
-		color = case_colors["overlap"],
-		linestyle = case_linestyles["overlap"],
-		linewidth = case_linewidths["overlap"],
-	)
-
-
-	# --------------------------------------------------------
-	# Bottom-left:
-	# confound decoding + corresponding true effect
-	#
-	# No `both` curve here.
-	# --------------------------------------------------------
-
-	lines!(
-		ax_confound_true,
-		t_confound,
-		y_confound;
-
-		color = case_colors["confound"],
-		linestyle = case_linestyles["confound"],
-		linewidth = case_linewidths["confound"],
-	)
-
-	lines!(
-		ax_confound_true,
-		t_true,
-		y_true;
-
-		color = true_effect_color,
-		linestyle = true_effect_linestyle,
-		linewidth = true_effect_linewidth,
-	)
-
-
-	# --------------------------------------------------------
-	# Bottom-right:
-	# overlap + confound + both
-	# --------------------------------------------------------
-
-	lines!(
-		ax_biased_cases,
-		t_overlap,
-		y_overlap;
-
-		color = case_colors["overlap"],
-		linestyle = case_linestyles["overlap"],
-		linewidth = case_linewidths["overlap"],
-	)
-
-	lines!(
-		ax_biased_cases,
-		t_confound,
-		y_confound;
-
-		color = case_colors["confound"],
-		linestyle = case_linestyles["confound"],
-		linewidth = case_linewidths["confound"],
-	)
-
-	lines!(
-		ax_biased_cases,
-		t_both,
-		y_both;
-
-		color = case_colors["both"],
-		linestyle = case_linestyles["both"],
-		linewidth = case_linewidths["both"],
-	)
-
-
-	# --------------------------------------------------------
-	# Shared axes
-	# --------------------------------------------------------
-
-	linkxaxes!(
-		ax_clean,
-		ax_overlap,
-		ax_confound_true,
-		ax_biased_cases,
-	)
-
-	linkyaxes!(
-		ax_clean,
-		ax_overlap,
-		ax_confound_true,
-		ax_biased_cases,
-	)
-
-
-	# --------------------------------------------------------
-	# Main title
-	# --------------------------------------------------------
-
-	Label(
-		fig[0, 1:2],
-		figure_title;
-
-		fontsize = 25,
-		font = :bold,
-		padding = (0, 0, 8, 8),
-	)
-
-
-	# --------------------------------------------------------
-	# One shared legend
-	# --------------------------------------------------------
-
-	legend_elements = LineElement[
-		LineElement(
-			color = case_colors["clean"],
-			linestyle = case_linestyles["clean"],
-			linewidth = case_linewidths["clean"],
-		),
-
-		LineElement(
-			color = case_colors["overlap"],
-			linestyle = case_linestyles["overlap"],
-			linewidth = case_linewidths["overlap"],
-		),
-
-		LineElement(
-			color = case_colors["confound"],
-			linestyle = case_linestyles["confound"],
-			linewidth = case_linewidths["confound"],
-		),
-
-		LineElement(
-			color = case_colors["both"],
-			linestyle = case_linestyles["both"],
-			linewidth = case_linewidths["both"],
-		),
-
-		LineElement(
-			color = true_effect_color,
-			linestyle = true_effect_linestyle,
-			linewidth = true_effect_linewidth,
-		),
-	]
-
-	legend_labels = [
-		"Clean",
-		"Overlap",
-		"Confound",
-		"Both",
-		true_effect_label,
-	]
-
-	Legend(
-		fig[3, 1:2],
-		legend_elements,
-		legend_labels;
-
-		orientation = :horizontal,
-		framevisible = false,
-
-		labelsize = 13,
-		patchsize = (30, 12),
-
-		tellheight = true,
-	)
-
-
-	# --------------------------------------------------------
-	# Layout spacing
-	# --------------------------------------------------------
-
-	colgap!(fig.layout, 28)
-	rowgap!(fig.layout, 18)
-
-	rowsize!(
-		fig.layout,
-		0,
-		Auto(0.10),
-	)
-
-	rowsize!(
-		fig.layout,
-		3,
-		Auto(0.10),
-	)
-
-	return fig
+    ax_biased_cases = _sd_make_axis(
+        fig[2, 2];
+
+        title = "Overlap, Confound, and Both",
+        ylabel = ylabel_text,
+
+        show_x = true,
+        show_y = false,
+
+        x_limits = x_limits,
+        y_limits = y_limits,
+        x_ticks = x_ticks
+    )
+
+
+    # --------------------------------------------------------
+    # Top-left: Clean
+    # --------------------------------------------------------
+
+    lines!(
+        ax_clean,
+        t_clean,
+        y_clean;
+
+        color = case_colors["clean"],
+        linestyle = case_linestyles["clean"],
+        linewidth = case_linewidths["clean"]
+    )
+
+    if show_true_effect &&
+       ("clean" in true_effect_cases)
+
+        lines!(
+            ax_clean,
+            t_true,
+            y_true;
+
+            color = true_effect_color,
+            linestyle = true_effect_linestyle,
+            linewidth = true_effect_linewidth
+        )
+    end
+
+
+    # --------------------------------------------------------
+    # Top-right: Overlap
+    # --------------------------------------------------------
+
+    lines!(
+        ax_overlap,
+        t_overlap,
+        y_overlap;
+
+        color = case_colors["overlap"],
+        linestyle = case_linestyles["overlap"],
+        linewidth = case_linewidths["overlap"]
+    )
+
+    if show_true_effect &&
+       ("overlap" in true_effect_cases)
+
+        lines!(
+            ax_overlap,
+            t_true,
+            y_true;
+
+            color = true_effect_color,
+            linestyle = true_effect_linestyle,
+            linewidth = true_effect_linewidth
+        )
+    end
+
+
+    # --------------------------------------------------------
+    # Bottom-left: Confound
+    # --------------------------------------------------------
+
+    lines!(
+        ax_confound,
+        t_confound,
+        y_confound;
+
+        color = case_colors["confound"],
+        linestyle = case_linestyles["confound"],
+        linewidth = case_linewidths["confound"]
+    )
+
+    if show_true_effect &&
+       ("confound" in true_effect_cases)
+
+        lines!(
+            ax_confound,
+            t_true,
+            y_true;
+
+            color = true_effect_color,
+            linestyle = true_effect_linestyle,
+            linewidth = true_effect_linewidth
+        )
+    end
+
+
+    # --------------------------------------------------------
+    # Bottom-right:
+    # overlap + confound + both
+    # --------------------------------------------------------
+
+    lines!(
+        ax_biased_cases,
+        t_overlap,
+        y_overlap;
+
+        color = case_colors["overlap"],
+        linestyle = case_linestyles["overlap"],
+        linewidth = case_linewidths["overlap"]
+    )
+
+    lines!(
+        ax_biased_cases,
+        t_confound,
+        y_confound;
+
+        color = case_colors["confound"],
+        linestyle = case_linestyles["confound"],
+        linewidth = case_linewidths["confound"]
+    )
+
+    lines!(
+        ax_biased_cases,
+        t_both,
+        y_both;
+
+        color = case_colors["both"],
+        linestyle = case_linestyles["both"],
+        linewidth = case_linewidths["both"]
+    )
+
+    if show_true_effect &&
+       ("both" in true_effect_cases)
+
+        lines!(
+            ax_biased_cases,
+            t_true,
+            y_true;
+
+            color = true_effect_color,
+            linestyle = true_effect_linestyle,
+            linewidth = true_effect_linewidth
+        )
+    end
+
+
+    # --------------------------------------------------------
+    # Shared axes
+    # --------------------------------------------------------
+
+    linkxaxes!(
+        ax_clean,
+        ax_overlap,
+        ax_confound,
+        ax_biased_cases
+    )
+
+    linkyaxes!(
+        ax_clean,
+        ax_overlap,
+        ax_confound,
+        ax_biased_cases
+    )
+
+
+    # --------------------------------------------------------
+    # Main title
+    # --------------------------------------------------------
+
+    Label(
+        fig[0, 1:2],
+        figure_title;
+
+        fontsize = 25,
+        font = :bold,
+        padding = (0, 0, 8, 8)
+    )
+
+
+    # --------------------------------------------------------
+    # Shared legend
+    # --------------------------------------------------------
+
+    legend_elements =
+        LineElement[
+            LineElement(
+                color = case_colors["clean"],
+                linestyle = case_linestyles["clean"],
+                linewidth = case_linewidths["clean"]
+            ),
+
+            LineElement(
+                color = case_colors["overlap"],
+                linestyle = case_linestyles["overlap"],
+                linewidth = case_linewidths["overlap"]
+            ),
+
+            LineElement(
+                color = case_colors["confound"],
+                linestyle = case_linestyles["confound"],
+                linewidth = case_linewidths["confound"]
+            ),
+
+            LineElement(
+                color = case_colors["both"],
+                linestyle = case_linestyles["both"],
+                linewidth = case_linewidths["both"]
+            )
+        ]
+
+
+    legend_labels = [
+        "Clean",
+        "Overlap",
+        "Confound",
+        "Both"
+    ]
+
+
+    if show_true_effect
+
+        push!(
+            legend_elements,
+
+            LineElement(
+                color = true_effect_color,
+                linestyle = true_effect_linestyle,
+                linewidth = true_effect_linewidth
+            )
+        )
+
+        push!(
+            legend_labels,
+            true_effect_label
+        )
+    end
+
+
+    Legend(
+        fig[3, 1:2],
+        legend_elements,
+        legend_labels;
+
+        orientation = :horizontal,
+        framevisible = false,
+
+        labelsize = 13,
+        patchsize = (30, 12),
+
+        tellheight = true
+    )
+
+
+    # --------------------------------------------------------
+    # Layout spacing
+    # --------------------------------------------------------
+
+    colgap!(
+        fig.layout,
+        28
+    )
+
+    rowgap!(
+        fig.layout,
+        18
+    )
+
+    rowsize!(
+        fig.layout,
+        0,
+        Auto(0.10)
+    )
+
+    rowsize!(
+        fig.layout,
+        3,
+        Auto(0.10)
+    )
+
+
+    return fig
 end
