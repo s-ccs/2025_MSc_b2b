@@ -151,17 +151,17 @@ gradually building up:
 > 
 > **Current structure:**
 >```
-> ├── notebooks/
+> ├── notebooks/                         # interactive debugging notebooks with sliders for different configurations
 > │   ├── 00_debug_simulation.jl 
 > │   ├── 01_debug_standard_decoding.jl
 > │   ├── 02_debug_rerp_decoding.jl
-> │   ├── 03_debug_plain_b2b.jl (very messy now)
+> │   ├── 03_debug_plain_b2b.jl          # still messy    
 > │   ├── 04_debug_one_step_b2b.jl
 > │   ├── 05_debug_two_step_b2b.jl
-> │   ├── 06_compare_pipelines.jl
-> │   └── simulation_controls.jl  #PlutoUI. Slider
+> │   ├── 06_compare_pipelines.jl        # overview of all five pipelines; no sliders
+> │   └── simulation_controls.jl         # shared PlutoUI sliders / simulation controls
 >
-> ├── scripts/
+> ├── scripts/                           # scripts for running and saving the five pipelines in folder `results/`
 > │   ├── 01_run_standard_decoding.jl
 > │   ├── 02_run_rerp_decoding.jl
 > │   ├── 03_run_plain_b2b.jl
@@ -169,17 +169,17 @@ gradually building up:
 > │   └── 05_run_two_step_b2b.jl
 >
 > ├── src/
-> │   ├── pipelines
+> │   ├── pipelines                      # implementations of the five pipelines
 > │   │   ├── 01_standard_decoding.jl
 > │   │   ├── 02_rerp_decoding.jl
 > │   │   ├── 03_plain_b2b.jl
 > │   │   ├── 04_one_step_b2b.jl
 > │   │   └── 05_two_step_b2b.jl
-> │   ├── plotting
+> │   ├── plotting                       # plotting functions
 > │   │   ├── plot_b2b.jl
 > │   │   └── plot_decoding.jl
-> │   ├── MScB2B.jl
-> │   ├── Pipelines.jl
-> │   ├── plotting.jl
-> │   └── simulation.jl
+> │   ├── MScB2B.jl                      # main module of the custom MScB2B package
+> │   ├── Pipelines.jl                   # loads/organise the pipeline implementations
+> │   ├── plotting.jl                    # loads plotting function
+> │   └── simulation.jl                  # simulation setup and data generation
 >```
