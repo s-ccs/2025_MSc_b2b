@@ -94,30 +94,6 @@ gradually building up:
 - Ridge hyperparameter tuning continues to use cross-validated RSquared()
 - The simulation and the main decoding pipelines are now largely implemented.
 
-```
-├── notebooks/
-│   ├── debug_one_step_b2b.jl 
-│   ├── debug_plain_b2b.jl
-│   ├── debug_rerp_decoding.jl
-│   ├── debug_simulation.jl                
-│   ├── debug_standard_decoding.jl
-│   └──  simulation_controls.jl  #PlutoUI. Slider
-
-├── src/
-│   ├── pipelines
-│   │   ├── one_step_b2b.jl
-│   │   ├── plain_b2b.jl
-│   │   ├── rerp_decoding.jl
-│   │   ├── standard_decoding.jl
-│   │   └── two_step_b2b.jl
-│   ├── plotting
-│   │   ├── plot_b2b.jl
-│   │   └── plot_decoding.jl
-│   ├── MScB2B.jl
-│   ├── Pipelines.jl
-│   ├── plotting.jl
-│   └── simulation.jl
-```
 
 ## 17 Aug 2026 — Plain B2B debugging
 
@@ -126,7 +102,13 @@ gradually building up:
 - Checked cross-validation repetitions, channel count, and predictor coding; the peak remained.
 - Removing the shared P300 intercept (`β₀,P300 = 0`) removed the peak while keeping the N170 intercept unchanged.
 
+## 25 Aug 2026 - Five pipelines, numerical debugging
 
+### Progress
+- Implement the two-step overlap-corrected B2B pipeline: continuous EEG → rERP overlap correction → reconstructed single trials → B2B
+- All five pipelines are now implemented and producing results.
+- Generated comparable plots for `condition` and `continuous` in all conditions, see [../notebooks/06_compare_pipelines.jl](../notebooks/06_compare_pipelines.jl)
+- Current focus is numerical validation/debugging of the B2B results.
 
 ## Current status
 
@@ -136,35 +118,68 @@ gradually building up:
 - [x] rERP decoding
 - [x] Plain B2B
 - [x] One-step FIR+B2B
-- [x] Plotting and simulation controls
+- [x] Two-step rERP → reconstructed single trials → B2B
+- [x] Plotting all five pipelines
+- [x] Saving pipeline results and figures
 
 ### In progress
-- [ ] One-step FIR+B2B debug
-- [ ] Finalise two-step rERP → reconstructed single trials → B2B
-- [ ] Compare the decoding/B2B pipelines
-- [ ] Run repeated seeds / parameter sweeps
+- [ ] Numerically validate the B2B results
+- [ ] Compare target recovery and cross-talk across pipelines
+- [ ] Investigate unusual B2B peaks / shapes
+- [ ] Run additional control simulations
+- [ ] Start with Zuco Dataset
 
 ### Next
 
- **🚩 Implement the two-step overlap-corrected B2B pipeline:**
- `continuous EEG → rERP overlap correction → reconstructed single trials → B2B`
+ **🚩 Pipelines debugging, especially B2B, check the results numerically rather than relying on visual inspection**
+   
+   **❗Main open question:**  The B2B estimate and the true ERP waveform have different properties and do not necessarily have the same shape. What is the right way to numerically debug the results?
+
+ 
+ **🚩 Start with ZuCo dataset**
 
 
-** ❗Main open question:**  
-How should the rERP model be used to reconstruct corrected single-trial epochs that can then be passed into the existing plain B2B pipeline?
 
 
 > [!IMPORTANT]
-> ### How to get started: **Open `notebooks/debug_plain_b2b.jl` in Pluto** 
+> ### How to get started: **[Open `06_compare_pipelines.jl`](../notebooks/06_compare_pipelines.jl) in Pluto**
 >
+> Open `notebooks/` and select notebook corresponding to what you want to inspect.
+> The individual debugging notebooks are not always very straightforward, so `06_compare_lines.jl` is the best entry for now.
+>
+> Each notebook activates and instantiates the repository environment automatically, i guess.....(if it works successfully)
 > 
-> The current workflow is organised into separate Pluto notebooks instead of one large notebook.
+> **Current structure:**
+>```
+> ├── notebooks/
+> │   ├── 00_debug_simulation.jl 
+> │   ├── 01_debug_standard_decoding.jl
+> │   ├── 02_debug_rerp_decoding.jl
+> │   ├── 03_debug_plain_b2b.jl (very messy now)
+> │   ├── 04_debug_one_step_b2b.jl
+> │   ├── 05_debug_two_step_b2b.jl
+> │   ├── 06_compare_pipelines.jl
+> │   └── simulation_controls.jl  #PlutoUI. Slider
 >
-> Open `notebooks/` and select notebook corresponding to what you want to inspect:
-> - `debug_plain_b2b.jl` — plain B2B 
-> - `debug_standard_decoding.jl` — standard decoding
-> - `debug_rerp_decoding.jl` — rERP decoding (partially debugged)
-> - `debug_one_step_b2b.jl` — one-step FIR+B2B (not yet debugged)
-> - `debug_simulation.jl` — simulation
+> ├── scripts/
+> │   ├── 01_run_standard_decoding.jl
+> │   ├── 02_run_rerp_decoding.jl
+> │   ├── 03_run_plain_b2b.jl
+> │   ├── 04_run_one_step_b2b.jl
+> │   └── 05_run_two_step_b2b.jl
 >
-> Each notebook activates and instantiates the repository environment automatically, i guess.....
+> ├── src/
+> │   ├── pipelines
+> │   │   ├── 01_standard_decoding.jl
+> │   │   ├── 02_rerp_decoding.jl
+> │   │   ├── 03_plain_b2b.jl
+> │   │   ├── 04_one_step_b2b.jl
+> │   │   └── 05_two_step_b2b.jl
+> │   ├── plotting
+> │   │   ├── plot_b2b.jl
+> │   │   └── plot_decoding.jl
+> │   ├── MScB2B.jl
+> │   ├── Pipelines.jl
+> │   ├── plotting.jl
+> │   └── simulation.jl
+>```
