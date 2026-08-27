@@ -183,3 +183,16 @@ gradually building up:
 > │   ├── plotting.jl                    # loads plotting function
 > │   └── simulation.jl                  # simulation setup and data generation
 >```
+
+
+
+
+
+
+> [!Interim notes]
+> ### 27 Aug 2026 — ZuCo2 data exploration
+> - Explored ZuCo 2.0 NR with pilot subject YRP.
+> - Started building fixation-level events from processed Matlab data.
+> - Fixation onset is not stored directly; tested reconstructing it from fixation EEG segments.
+> - Proposed predictors: word length, SUBTLEX-US frequency, GPT-2 surprisal.
+> - To discuss: latency source and fixation duration.
