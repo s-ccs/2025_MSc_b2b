@@ -110,6 +110,34 @@ gradually building up:
 - Generated comparable plots for `condition` and `continuous` in all conditions, see [../notebooks/06_compare_pipelines.jl](../notebooks/06_compare_pipelines.jl)
 - Current focus is numerical validation/debugging of the B2B results.
 
+
+## 01 Sep 2026 - ZuCo2 data explorarion
+
+### Progress
+- Explored ZuCo 2.0 NR with pilot subject YRP.
+- Started building fixation-level events from processed Matlab data.
+- Fixation onset is not stored directly; tested reconstructing it from fixation EEG segments.
+- Proposed predictors: word length, SUBTLEX-US frequency, GPT-2 surprisal.
+- Compared ZuCo2 with ROAMM, and decided to switch to [ROAMM](https://openneuro.org/datasets/ds007629/versions/1.3.0), it provides longer natural reading texts and synchronized EEG-eyetracking data.
+- Reference: [ROAMM tutorials](https://data-brain-mind.github.io/tutorials/reading-observed-at-mindless-moments-roamm-a-simultaneous-eeg-and-eye-tracking-dataset-of-natural-reading-with-attention-annotations/)
+
+## 08 Sep 2026 - ROAMM preprocessing
+
+### Progess
+- Build a ROAMM preprocessing pipeline using Python in a separate repo: [Natural-Reading-Lexical-Features](https://github.com/xuyg16/Natural-Reading-Lexical-Features)
+- Current scripts:
+  > - `01_prepare_text.py`
+  > - `02_compute_length_frequency.py`
+  > - `03_compute_surprisal.py`
+  > - `04_prepare_fixation_events.py`
+  > - `05_merge_lexical_features.py`
+
+- Generated word-level lexical predictors and fixation-level event tables aligned to EEG samples.
+- Current predictors: word length, Zipf frequency, and GPT-2 surprisal.
+- Next: test the ROAMM event table with B2B and decide whether to merge this preprocessing code back into the main repo. 
+
+
+
 ## Current status
 
 ### Working
@@ -121,22 +149,27 @@ gradually building up:
 - [x] Two-step rERP → reconstructed single trials → B2B
 - [x] Plotting all five pipelines
 - [x] Saving pipeline results and figures
+- [x] ROAMM text → lexical predictors → fixation onset → EEG latency preprocessing pipeline
+
 
 ### In progress
 - [ ] Numerically validate the B2B results
 - [ ] Compare target recovery and cross-talk across pipelines
 - [ ] Investigate unusual B2B peaks / shapes
 - [ ] Run additional control simulations
-- [ ] Start with Zuco Dataset
+- [ ] Test ROAMM as real-data input for B2B
 
 ### Next
 
  **🚩 Pipelines debugging, especially B2B, check the results numerically rather than relying on visual inspection**
    
-   **❗Main open question:**  The B2B estimate and the true ERP waveform have different properties and do not necessarily have the same shape. What is the right way to numerically debug the results?
+   **❗Main open question:**  
+   - The B2B estimate and the true ERP waveform have different properties and do not necessarily have the same shape. What is the right way to numerically debug the results?
+   - For ROAMM fixation events, should the analysis use left eye, right eye, or binocular events?
+   - Should surprisal use sentence-level or longer context, for example, page-level context.
 
  
- **🚩 Start with ZuCo dataset**
+
 
 
 
@@ -186,13 +219,3 @@ gradually building up:
 
 
 
-
-
-
-> [!Interim notes]
-> ### 27 Aug 2026 — ZuCo2 data exploration
-> - Explored ZuCo 2.0 NR with pilot subject YRP.
-> - Started building fixation-level events from processed Matlab data.
-> - Fixation onset is not stored directly; tested reconstructing it from fixation EEG segments.
-> - Proposed predictors: word length, SUBTLEX-US frequency, GPT-2 surprisal.
-> - To discuss: latency source and fixation duration.
