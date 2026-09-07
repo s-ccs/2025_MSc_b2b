@@ -114,6 +114,8 @@ gradually building up:
 ## 01 Sep 2026 - ZuCo2 data explorarion
 
 ### Progress
+- Added Hanning-window simulation with 1500 trials as a controlled temporal-support sanity check.❗ with current sampling rate and chosen size of basis function, there are aliasing/sampling artefacts.
+- ❗ Why hanning-window shows up as much better decodable? 
 - Explored ZuCo 2.0 NR with pilot subject YRP.
 - Started building fixation-level events from processed Matlab data.
 - Fixation onset is not stored directly; tested reconstructing it from fixation EEG segments.
@@ -124,6 +126,8 @@ gradually building up:
 ## 08 Sep 2026 - ROAMM preprocessing
 
 ### Progess
+
+#### ROAMM preprocessing
 - Build a ROAMM preprocessing pipeline using Python in a separate repo: [Natural-Reading-Lexical-Features](https://github.com/xuyg16/Natural-Reading-Lexical-Features)
 - Current scripts:
   > - `01_prepare_text.py`
@@ -134,7 +138,20 @@ gradually building up:
 
 - Generated word-level lexical predictors and fixation-level event tables aligned to EEG samples.
 - Current predictors: word length, Zipf frequency, and GPT-2 surprisal.
-- Next: test the ROAMM event table with B2B and decide whether to merge this preprocessing code back into the main repo. 
+- Next: test the ROAMM event table with B2B and decide whether to merge this preprocessing code back into the main repo.
+
+#### Simulation / B2B debugging
+- Compared all five pipelines under `clean`, `overlap`, `confound`, and `both`.
+- Plain B2B does not correct temporal overlap
+- One-step B2B:
+  - Produces temporally narrow estimates compared with Plain and Two-step B2B.
+  - There are two bumps when decoding continuous predictor in confounding condition.
+  - It seems like deconvolution corrects temporal overlap but not predictor correlation.
+- Two-step B2B:
+  - Currently shows the most stable recovery.
+  - Needs quantiative metrics. 
+
+
 
 
 
@@ -153,6 +170,7 @@ gradually building up:
 
 
 ### In progress
+- [ ] ❗ Why hanning-window shows up as much better decodable? Should we go deeper in this? 
 - [ ] Numerically validate the B2B results
 - [ ] Compare target recovery and cross-talk across pipelines
 - [ ] Investigate unusual B2B peaks / shapes
@@ -161,7 +179,7 @@ gradually building up:
 
 ### Next
 
- **🚩 Pipelines debugging, especially B2B, check the results numerically rather than relying on visual inspection**
+ **🚩 Main priority: pipelines debugging, especially B2B, check the results numerically rather than relying on visual inspection**
    
    **❗Main open question:**  
    - The B2B estimate and the true ERP waveform have different properties and do not necessarily have the same shape. What is the right way to numerically debug the results?
