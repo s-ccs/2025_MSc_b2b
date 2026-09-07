@@ -175,20 +175,28 @@ gradually building up:
 
 
 > [!IMPORTANT]
-> ### How to get started: **[Open `06_compare_pipelines.jl`](../notebooks/06_compare_pipelines.jl) in Pluto**
 >
-> Open `notebooks/` and select notebook corresponding to what you want to inspect.
-> The individual debugging notebooks are not always very straightforward, so `06_compare_lines.jl` is the best entry for now.
+> ### How to get started
 >
-> Each notebook activates and instantiates the repository environment automatically, i guess.....(if it works successfully)
-> 
+> Open the debugging notebook corresponding to the pipeline you want to inspect in Pluto:
+>
+> - [`00_debug_simulation.jl`](../notebooks/00_debug_simulation.jl) — simulation setup and generated data
+> - [`01_debug_standard_decoding.jl`](../notebooks/01_debug_standard_decoding.jl) — standard decoding
+> - [`02_debug_rerp_decoding.jl`](../notebooks/02_debug_rerp_decoding.jl) — rERP decoding
+> - [`03_debug_plain_b2b.jl`](../notebooks/03_debug_plain_b2b.jl) — plain B2B
+> - [`04_debug_one_step_b2b.jl`](../notebooks/04_debug_one_step_b2b.jl) — one-step B2B
+> - [`05_debug_two_step_b2b.jl`](../notebooks/05_debug_two_step_b2b.jl) — two-step B2B
+>
+> Each notebook activates and instantiates the repository environment automatically.
+
+
 > **Current structure:**
 >```
 > ├── notebooks/                         # interactive debugging notebooks with sliders for different configurations
 > │   ├── 00_debug_simulation.jl 
 > │   ├── 01_debug_standard_decoding.jl
 > │   ├── 02_debug_rerp_decoding.jl
-> │   ├── 03_debug_plain_b2b.jl          # still messy    
+> │   ├── 03_debug_plain_b2b.jl           
 > │   ├── 04_debug_one_step_b2b.jl
 > │   ├── 05_debug_two_step_b2b.jl
 > │   ├── 06_compare_pipelines.jl        # overview of all five pipelines; no sliders
