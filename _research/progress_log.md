@@ -158,7 +158,7 @@ gradually building up:
 - Added a sampling-rate check in the simulation; increasing the sampling rate does not remove the spike.
 - Prepared the full ROAMM dataset for the real-data B2B analysis.
   - Converted all synced EEG runs to `.npy` format.
-  - Current dataset: 44 subjects, 220 runs.
+  - Current dataset: 44 subjects, 220 runs, 6000 trials per subject. 
 - Implemented a provisional Two-step B2B pipeline for ROAMM:
   - run-wise Unfold overlap correction
   - extraction of corrected single trials
@@ -169,6 +169,13 @@ gradually building up:
   - LSQ is relatively stable under global EEG rescaling.
   - Ridge is much more sensitive to feature scaling.
 - ❗ EEG data scaling, V or uV?
+
+### Meeting note
+- Do the sanity check on EEG data, what is the quality of data.
+- Check the intercept, check channels, roughly go through some single channels.
+- centrlize word_length, frenquency_zipf
+- check saccade amplitude when page changes.
+
 
 
 
@@ -197,7 +204,8 @@ gradually building up:
 - [ ] Test ROAMM as real-data input for B2B
 - [ ] Develop and validate the ROAMM real-data B2B analysis
 - [ ] Real Covariate Design 
-- [ ] Held-out evaluation 
+- [ ] Held-out evaluation
+- [ ] quality of data sanity check
 ### Next
 
  **🚩 Main priority: pipelines debugging, especially B2B, check the results numerically rather than relying on visual inspection**
