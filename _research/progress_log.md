@@ -149,8 +149,26 @@ gradually building up:
   - It seems like deconvolution corrects temporal overlap but not predictor correlation.
 - Two-step B2B:
   - Currently shows the most stable recovery.
-  - Needs quantiative metrics. 
+  - Needs quantiative metrics.
+ 
 
+## 15 Sep 2026 - ROAMM real-data pipeline
+
+### Progegress
+- Added a sampling-rate check in the simulation; increasing the sampling rate does not remove the spike.
+- Prepared the full ROAMM dataset for the real-data B2B analysis.
+  - Converted all synced EEG runs to `.npy` format.
+  - Current dataset: 44 subjects, 220 runs.
+- Implemented a provisional Two-step B2B pipeline for ROAMM:
+  - run-wise Unfold overlap correction
+  - extraction of corrected single trials
+  - subject-level B2B across runs
+  - successfully tested on `sub-10014` using all 5 runs.
+  - noisy result, very samll estimates values.
+- Compared LSQ and Ridge on a small real-data example.
+  - LSQ is relatively stable under global EEG rescaling.
+  - Ridge is much more sensitive to feature scaling.
+- ❗ EEG data scaling, V or uV?
 
 
 
@@ -167,6 +185,7 @@ gradually building up:
 - [x] Plotting all five pipelines
 - [x] Saving pipeline results and figures
 - [x] ROAMM text → lexical predictors → fixation onset → EEG latency preprocessing pipeline
+- [x]  Sampling-rate control: increasing the sampling rate does not remove the spike in the default P300 simulation
 
 
 ### In progress
@@ -176,7 +195,9 @@ gradually building up:
 - [ ] Investigate unusual B2B peaks / shapes
 - [ ] Run additional control simulations
 - [ ] Test ROAMM as real-data input for B2B
-
+- [ ] Develop and validate the ROAMM real-data B2B analysis
+- [ ] Real Covariate Design 
+- [ ] Held-out evaluation 
 ### Next
 
  **🚩 Main priority: pipelines debugging, especially B2B, check the results numerically rather than relying on visual inspection**
@@ -185,8 +206,12 @@ gradually building up:
    - The B2B estimate and the true ERP waveform have different properties and do not necessarily have the same shape. What is the right way to numerically debug the results?
    - For ROAMM fixation events, should the analysis use left eye, right eye, or binocular events?
    - Should surprisal use sentence-level or longer context, for example, page-level context.
-
- 
+- EEG scaling still needs to be clarified:
+  - Original BIDS metadata reports EEG units as `µV`.
+  - The synced `.pkl` and exported `.npy` values are around `1e-5`.
+  - The `.npy` export preserves the values from the synced `.pkl`, so any scaling change must have occurred upstream.
+- Real Covariate Design — adding a simulation with three correlated predictors before moving to the ROAMM analysis.
+- Held-out evaluation — comparing Plain B2B vs. Two-step B2B on ROAMM using held-out performance.
 
 
 
