@@ -10,8 +10,8 @@ MLJ.machine(
 )
 
 function make_ridge_tuned_model(;
-    inner_nfolds::Int, 
-    resolution::Int
+    inner_nfolds::Int = 3, 
+    resolution::Int = 20
 )
     ridge_model = RidgeRegressor()
 
@@ -92,39 +92,84 @@ function decode_standard_ridge(
     return scores, yhat
 end
 
-function run_standard_decoding(
-    cfg,
-    cases;
-    model = model,
-    target::Symbol = :continuous,
+function _run_standard_decoding(
+    simulation_cases,
+    cases_to_run;
+    model,
+    targets,
     nfolds::Int,
     seed::Int
 )
 
     score_tables = DataFrame[]
-    yhats = Dict{Symbol, Matrix{Float64}}()
+    yhats = Dict{Tuple{Symbol, Symbol}, Matrix{Float64}}()
 
-    for case_name in (:clean, :overlap, :confound, :both)
-        case_data = getproperty(cases, case_name)
+    for case_name in cases_to_run
+        case_data = getproperty(simulation_cases, case_name)
         dat = case_data.epoched
         evts = case_data.events_epoched
         times = case_data.times
-        scores_case, yhat_case = decode_standard_ridge(
-            dat,
-            evts,
-            times,
-            model;
-            target = target,
-            nfolds = nfolds,
-            seed = seed
-        )
-        scores_case[!, :case] = fill(String(case_name), nrow(scores_case))
-        push!(score_tables, scores_case)
-        yhats[case_name] = yhat_case
+
+        for target in targets
+            scores_case, yhat_case = decode_standard_ridge(
+                dat,
+                evts,
+                times,
+                model;
+                target = target,
+                nfolds = nfolds,
+                seed = seed
+            )
+            scores_case[!, :case] = fill(String(case_name), nrow(scores_case))
+            scores_case[!, :target] = fill(String(target), nrow(scores_case))
+            push!(score_tables, scores_case)
+            yhats[(case_name, target)] = yhat_case
+        end
     end
-    
+
     return (
         scores = vcat(score_tables...),
         yhats = yhats
+    )
+end
+
+function run_standard_decoding(
+    cfg::ConditionContinuousConfig,
+    simulation_cases;
+    model = make_ridge_tuned_model(),
+    target::Symbol = :continuous,
+    nfolds::Int = 3,
+    seed::Int = 12
+)
+    return _run_standard_decoding(
+        simulation_cases,
+        (:clean, :overlap, :confound, :both);
+        model = model,
+        targets = (target,),
+        nfolds = nfolds,
+        seed = seed
+    )
+end
+
+function run_standard_decoding(
+    cfg::CorrelatedContinuousConfig,
+    simulation_cases;
+    model = make_ridge_tuned_model(),
+    targets = (
+        :continuous1,
+        :continuous2,
+        :continuous3
+    ),
+    nfolds::Int = 3,
+    seed::Int = 12
+)
+
+    return _run_standard_decoding(
+        simulation_cases,
+        (:no_overlap, :overlap);
+        model = model,
+        targets = target,
+        nfolds = nfolds,
+        seed = seed
     )
 end
