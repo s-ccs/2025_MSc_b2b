@@ -1,0 +1,7 @@
+2026-09-21 13:16:47,846 - INFO - Found 5 coordinate files
+2026-09-21 13:16:47,847 - INFO - Loading history_of_film_coordinates.csv
+2026-09-21 13:16:47,856 - INFO - Loading pluto_coordinates.csv
+2026-09-21 13:16:47,872 - INFO - Loading prisoners_dilemma_coordinates.csv
+2026-09-21 13:16:47,889 - INFO - Loading serena_williams_coordinates.csv
+2026-09-21 13:16:47,897 - INFO - Loading the_voynich_manuscript_coordinates.csv
+2026-09-21 13:16:47,991 - INFO - Saved 10839 words to /store/users/xu/2025_MSc_b2b/roamm/outputs/roamm_words.csv

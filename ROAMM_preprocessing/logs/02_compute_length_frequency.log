@@ -1,0 +1,7 @@
+2026-09-21 13:17:02,942 - INFO - Loading /store/users/xu/2025_MSc_b2b/roamm/outputs/roamm_words.csv
+2026-09-21 13:17:03,159 - INFO - Loaded 10839 word occurrences
+2026-09-21 13:17:03,329 - INFO - 19 non-lexical tokens have no frequency
+2026-09-21 13:17:03,329 - INFO - Word length range: 0 to 18
+2026-09-21 13:17:03,329 - INFO - Frequency range: 0.00 to 7.73
+2026-09-21 13:17:03,329 - WARNING - 58 words have zero frequency
+2026-09-21 13:17:03,419 - INFO - Saved output to /store/users/xu/2025_MSc_b2b/roamm/outputs/roamm_words_with_length_and_frequency.csv
