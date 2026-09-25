@@ -1,6 +1,6 @@
 Base.@kwdef struct ConditionContinuousConfig
     n_trials::Int = 1500
-    sfreq::Float64 = 500.0
+    sfreq::Float64 = 100.0
 
     n_channels::Int = 20
     noiselevel::Float64 = 0.3
