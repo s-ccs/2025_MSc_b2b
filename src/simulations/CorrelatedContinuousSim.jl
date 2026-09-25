@@ -1,4 +1,3 @@
-import Distributions
 # 1. Configuration
 Base.@kwdef struct CorrelatedContinuousConfig
     n_trials::Int = 1500
@@ -9,6 +8,7 @@ Base.@kwdef struct CorrelatedContinuousConfig
     noiselevel::Float64 = 0.3
     channel_noise_sd::Float64 = 0.3
 
+    """
     β0_p100::Float64 = 5.0
     β_p100::Float64 = 2.0
 
@@ -17,6 +17,17 @@ Base.@kwdef struct CorrelatedContinuousConfig
 
     β0_p300::Float64 = 5.0
     β_p300::Float64 = 1.5
+    """
+
+    component_width::Float64 = 0.15
+
+    peak1::Float64 = 0.15
+    peak2::Float64 = 0.45
+    peak3::Float64 = 0.75
+
+    β0::Float64 = 5.0
+    β::Float64 = 2.0
+    
 
     overlap_interval_ms::Float64 = 250.0
     onset_predictor_bias::Float64 = -0.6
@@ -60,7 +71,7 @@ function UnfoldSim.generate_events(
 end
 
 function make_corr_cont_components(cfg::CorrelatedContinuousConfig)
-
+    """
     p100 = UnfoldSim.LinearModelComponent(
         basis = UnfoldSim.p100(; sfreq = cfg.sfreq),
         formula = @formula(0 ~ 1 + continuous1),
@@ -69,20 +80,42 @@ function make_corr_cont_components(cfg::CorrelatedContinuousConfig)
     )
 
     n170 = UnfoldSim.LinearModelComponent(
-        basis = UnfoldSim.n170(; sfreq = cfg.sfreq),
+        basis = -UnfoldSim.n170(; sfreq = cfg.sfreq),
         formula = @formula(0 ~ 1 + continuous2),
         β = [cfg.β0_n170, cfg.β_n170],
         contrasts = Dict()
     )
 
     p300 = UnfoldSim.LinearModelComponent(
-        basis = UnfoldSim.p300(; sfreq = cfg.sfreq),
+        # basis = UnfoldSim.p300(; sfreq = cfg.sfreq),
+        basis = UnfoldSim.hanning(0.30, 0.35, cfg.sfreq),
         formula = @formula(0 ~ 1 + continuous3),
         β = [cfg.β0_p300, cfg.β_p300],
         contrasts = Dict()
     )
 
-    return [p100, n170, p300]
+    """
+
+    component1 = UnfoldSim.LinearModelComponent(
+        basis = UnfoldSim.hanning(cfg.component_width, cfg.peak1, cfg.sfreq),
+        formula = @formula(0 ~ 1 + continuous1),
+        β = [cfg.β0, cfg.β],
+    )
+
+    component2 = UnfoldSim.LinearModelComponent(
+        basis = UnfoldSim.hanning(cfg.component_width, cfg.peak2, cfg.sfreq),
+        formula = @formula(0 ~ 1 + continuous2),
+        β = [cfg.β0, cfg.β],
+    )
+
+    component3 = UnfoldSim.LinearModelComponent(
+        basis = UnfoldSim.hanning(cfg.component_width, cfg.peak3, cfg.sfreq),
+        formula = @formula(0 ~ 1 + continuous3),
+        β = [cfg.β0, cfg.β],
+    )
+    return [component1, component2, component3]
+    
+    # return [p100, n170, p300]
 end
 
 function make_corr_cont_onset(
