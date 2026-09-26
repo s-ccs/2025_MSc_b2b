@@ -1,0 +1,41 @@
+===============================
+One-step FIR + B2B
+===============================
+Active project: /store/users/xu/2025_MSc_b2b/Project.toml
+Threads: 128
+Started: 2026-08-30T20:16:56.666
+
+Simulating cases...
+Done simulating cases.
+
+Running one-step B2B...
+Starting one-step B2B: clean
+Progress:  67%|███████████████████████████▍             |  ETA: 2:00:02[K
+   cross_val_rep: 3[K[A
+[K[AProgress: 100%|█████████████████████████████████████████| Time: 4:04:34[K
+   cross_val_rep: 1[K
+Finished one-step B2B: clean
+Starting one-step B2B: overlap
+Progress:  67%|███████████████████████████▍             |  ETA: 0:56:09[K
+   cross_val_rep: 1[K[A
+[K[AProgress: 100%|█████████████████████████████████████████| Time: 1:52:23[K
+   cross_val_rep: 2[K
+Finished one-step B2B: overlap
+Starting one-step B2B: confound
+Progress:  67%|███████████████████████████▍             |  ETA: 2:04:08[K
+   cross_val_rep: 1[K[A
+[K[AProgress: 100%|█████████████████████████████████████████| Time: 4:10:55[K
+   cross_val_rep: 2[K
+Finished one-step B2B: confound
+Starting one-step B2B: both
+Progress:  67%|███████████████████████████▍             |  ETA: 0:58:29[K
+   cross_val_rep: 1[K[A
+[K[AProgress: 100%|█████████████████████████████████████████| Time: 1:58:16[K
+   cross_val_rep: 3[K
+Finished one-step B2B: both
+
+Saved to:
+/store/users/xu/2025_MSc_b2b/results/one_step_b2b_hanning_1500trials_results.jls
+
+Total time: 726.45 min
+Finished: 2026-08-31T08:23:34.513

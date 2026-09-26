@@ -31,6 +31,8 @@ begin
 end
 
 # ╔═╡ 0d11f181-fe2f-4796-8981-f9fa9ef1d761
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	standard = deserialize(
 	    joinpath(results_dir, "01_standard_decoding_results.jls")
@@ -52,8 +54,11 @@ begin
 	    joinpath(results_dir, "05_two_step_b2b_results.jls")
 	)
 end
+  ╠═╡ =#
 
 # ╔═╡ b3f15889-7799-4ab1-b4f5-f9f337a6e876
+# ╠═╡ disabled = true
+#=╠═╡
 # ==========================================
 # 01 - Standard decoding
 # ==========================================
@@ -61,23 +66,32 @@ begin
 	scores_standard_condition = standard.condition_results.scores
 	scores_standard_continuous = standard.continuous_results.scores
 end
+  ╠═╡ =#
 
 # ╔═╡ 1a83acf7-fa70-4124-b54f-3ab55e9ea419
+# ╠═╡ disabled = true
+#=╠═╡
 fig_standard_condition = MScB2B.plot_standard_decoding_grid(
 	scores_standard_condition,
 	standard.cfg;
 	target = :condition
 )
+  ╠═╡ =#
 
 # ╔═╡ 4eafcc8f-5ee6-44ee-b3c8-f9a3301b899c
+# ╠═╡ disabled = true
+#=╠═╡
 fig_standard_continuous = MScB2B.plot_standard_decoding_grid(
 	scores_standard_continuous,
 	standard.cfg;
 	target = :continuous
 )
 #save("standard_decoding_continuous_tuned_lambda.svg", fig_standard_continuous)
+  ╠═╡ =#
 
 # ╔═╡ fa98fc46-6ec8-44f5-a9d5-a1b3a8bdfd41
+# ╠═╡ disabled = true
+#=╠═╡
 # =========================================
 # 02 - rerp decoding
 # ========================================
@@ -85,39 +99,60 @@ begin
 	scores_rerp_condition = rerp.condition_results.scores
 	scores_rerp_continuous = rerp.continuous_results.scores
 end
+  ╠═╡ =#
 
 # ╔═╡ a09e150c-63d4-41e7-aae7-42d6b95ecad9
+# ╠═╡ disabled = true
+#=╠═╡
 fig_rerp_condition = MScB2B.plot_standard_decoding_grid(
 		scores_rerp_condition,
 		standard.cfg;
 		target = :condition
 	)
+  ╠═╡ =#
 
 # ╔═╡ 7ecf5bc1-6198-4e2e-aab6-c457cd485101
+# ╠═╡ disabled = true
+#=╠═╡
 fig_rerp_continuous = MScB2B.plot_standard_decoding_grid(
 	scores_rerp_continuous,
 	standard.cfg;
 	target = :continuous
 )
+  ╠═╡ =#
 
 # ╔═╡ a1b8bacc-67d1-400f-a796-4f90b3a3db07
+# ╠═╡ disabled = true
+#=╠═╡
 # =======================================
 # 03 - plain B2B
 # ========================================
 scores_plain_b2b = plain_b2b.score_tables
+  ╠═╡ =#
 
 # ╔═╡ 4754f6e5-9092-48f3-a455-15f76b5f2b9d
+# ╠═╡ disabled = true
+#=╠═╡
 fig_plain_b2b_condition = MScB2B.plot_b2b_grid(
 	scores_plain_b2b,
 	plain_b2b.cfg;
 	target = :condition
 )
+  ╠═╡ =#
 
 # ╔═╡ 9e5bed10-48c6-472c-96a5-ef2be8747cd4
+# ╠═╡ disabled = true
+#=╠═╡
 fig_plain_b2b_continuous = MScB2B.plot_b2b_grid(
 		scores_plain_b2b,
 		plain_b2b.cfg;
 		target = :continuous
+	)
+  ╠═╡ =#
+
+# ╔═╡ f9915e97-59c9-4c15-99e3-8ff6bc77d7b4
+one_step_b2b = deserialize(
+	    joinpath(results_dir, "one_step_b2b_hanning_1500trials_results.jls")
 	)
 
 # ╔═╡ 494ad80a-7133-42f6-be53-a7a43243740a
@@ -130,37 +165,64 @@ scores_one_step_b2b = one_step_b2b.score_tables
 fig_one_step_b2b_condition = MScB2B.plot_b2b_grid(
 	scores_one_step_b2b,
 	one_step_b2b.cfg;
-	target = :condition
+	target = :condition,
+	x_window = (-0.1, 0.6)
 )
 
 # ╔═╡ 95c902cf-19c7-4748-bc9f-9e549c11c98e
 fig_one_step_b2b_continuous = MScB2B.plot_b2b_grid(
 		scores_one_step_b2b,
 		one_step_b2b.cfg;
-		target = :continuous
+		target = :continuous,
+		x_window = (-0.1, 0.6)
 	)
 
+# ╔═╡ 97226b8b-bc89-486e-a9e9-2624c9e9073c
+begin
+	plot_dir = joinpath(@__DIR__, "..", "plots")
+	save(
+        joinpath(plot_dir, "04_one_step_b2b_condition_hanning_1500trials_long_windows.svg"),
+        fig_one_step_b2b_condition
+    )
+
+    save(
+        joinpath(plot_dir, "04_one_step_b2b_continuous_hanning_1500trials_longwindows.svg"),
+        fig_one_step_b2b_continuous
+    )
+end
+
 # ╔═╡ 03a985fd-74ee-4d3c-ba7f-38252e50c0f7
+# ╠═╡ disabled = true
+#=╠═╡
 # ======================================
 # 05 -  two step B2B
 # ======================================
 scores_two_step_b2b = two_step_b2b.score_tables
+  ╠═╡ =#
 
 # ╔═╡ 02cb3245-4a38-47f0-847f-e91dec3e61c0
+# ╠═╡ disabled = true
+#=╠═╡
 fig_two_step_b2b_condition = MScB2B.plot_b2b_grid(
 	scores_two_step_b2b,
 	two_step_b2b.cfg;
 	target = :condition
 )
+  ╠═╡ =#
 
 # ╔═╡ e0b923ca-5989-44a4-a2e7-7d8fbe246d58
+# ╠═╡ disabled = true
+#=╠═╡
 fig_two_step_b2b_continuous = MScB2B.plot_b2b_grid(
 		scores_two_step_b2b,
 		two_step_b2b.cfg;
 		target = :continuous
 	)
+  ╠═╡ =#
 
 # ╔═╡ 25ab2016-3821-4783-bbed-5d1deb1af7d5
+# ╠═╡ disabled = true
+#=╠═╡
 begin
     plot_dir = joinpath(@__DIR__, "..", "plots")
 
@@ -221,6 +283,7 @@ begin
 
     "Plots saved to: $plot_dir"
 end
+  ╠═╡ =#
 
 # ╔═╡ Cell order:
 # ╠═f390cf4c-9e73-11f1-b1f4-1dfed743fa21
@@ -238,9 +301,11 @@ end
 # ╠═a1b8bacc-67d1-400f-a796-4f90b3a3db07
 # ╠═4754f6e5-9092-48f3-a455-15f76b5f2b9d
 # ╠═9e5bed10-48c6-472c-96a5-ef2be8747cd4
+# ╠═f9915e97-59c9-4c15-99e3-8ff6bc77d7b4
 # ╠═494ad80a-7133-42f6-be53-a7a43243740a
 # ╠═123ed81f-a95f-4861-ab48-e3a6fb736b06
 # ╠═95c902cf-19c7-4748-bc9f-9e549c11c98e
+# ╠═97226b8b-bc89-486e-a9e9-2624c9e9073c
 # ╠═03a985fd-74ee-4d3c-ba7f-38252e50c0f7
 # ╠═02cb3245-4a38-47f0-847f-e91dec3e61c0
 # ╠═e0b923ca-5989-44a4-a2e7-7d8fbe246d58

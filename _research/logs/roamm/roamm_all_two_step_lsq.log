@@ -1,0 +1,32 @@
+===============================
+ROAMM all-data Two-step B2B
+Solver: LSQ / LSQ
+===============================
+Started: 2026-09-14T23:06:18.929
+
+Loading event tables...
+ERROR: LoadError: ArgumentError: "/scratch/data/ROAMM/derivatives/synced/roamm_fixation_events.csv" is not a valid file or doesn't exist
+Stacktrace:
+  [1] macro expansion
+    @ ~/.julia/packages/CSV/LiiJM/src/context.jl:314 [inlined]
+  [2] Context
+    @ ./none:0 [inlined]
+  [3] CSV.Context(source::CSV.Arg, header::CSV.Arg, normalizenames::CSV.Arg, datarow::CSV.Arg, skipto::CSV.Arg, footerskip::CSV.Arg, transpose::CSV.Arg, comment::CSV.Arg, ignoreemptyrows::CSV.Arg, ignoreemptylines::CSV.Arg, select::CSV.Arg, drop::CSV.Arg, limit::CSV.Arg, buffer_in_memory::CSV.Arg, threaded::CSV.Arg, ntasks::CSV.Arg, tasks::CSV.Arg, rows_to_check::CSV.Arg, lines_to_check::CSV.Arg, missingstrings::CSV.Arg, missingstring::CSV.Arg, delim::CSV.Arg, ignorerepeated::CSV.Arg, quoted::CSV.Arg, quotechar::CSV.Arg, openquotechar::CSV.Arg, closequotechar::CSV.Arg, escapechar::CSV.Arg, dateformat::CSV.Arg, dateformats::CSV.Arg, decimal::CSV.Arg, groupmark::CSV.Arg, truestrings::CSV.Arg, falsestrings::CSV.Arg, stripwhitespace::CSV.Arg, type::CSV.Arg, types::CSV.Arg, typemap::CSV.Arg, pool::CSV.Arg, downcast::CSV.Arg, lazystrings::CSV.Arg, stringtype::CSV.Arg, strict::CSV.Arg, silencewarnings::CSV.Arg, maxwarnings::CSV.Arg, debug::CSV.Arg, parsingdebug::CSV.Arg, validate::CSV.Arg, streaming::CSV.Arg)
+    @ CSV ~/.julia/packages/CSV/LiiJM/src/context.jl:0
+  [4] #File#18
+    @ ~/.julia/packages/CSV/LiiJM/src/file.jl:222 [inlined]
+  [5] CSV.File(source::String)
+    @ CSV ~/.julia/packages/CSV/LiiJM/src/file.jl:162
+  [6] read(source::String, sink::Type; copycols::Bool, kwargs::@Kwargs{})
+    @ CSV ~/.julia/packages/CSV/LiiJM/src/CSV.jl:117
+  [7] read(source::String, sink::Type)
+    @ CSV ~/.julia/packages/CSV/LiiJM/src/CSV.jl:113
+  [8] top-level scope
+    @ /store/users/xu/2025_MSc_b2b/scripts/06_run_roamm_all_two_step_lsq.jl:225
+  [9] include(mod::Module, _path::String)
+    @ Base ./Base.jl:306
+ [10] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:317
+ [11] _start()
+    @ Base ./client.jl:550
+in expression starting at /store/users/xu/2025_MSc_b2b/scripts/06_run_roamm_all_two_step_lsq.jl:225

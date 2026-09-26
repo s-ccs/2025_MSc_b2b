@@ -15,15 +15,6 @@ begin
 	using DataFrames
 end
 
-# ╔═╡ 7b2076e3-1f4b-45f6-b5cd-845b4cba6734
-"""
-# B2B sign sanity check
-
-This notebook checks whether B2B estimates flip sign when the simulated generator effect is flipped.
-
-The main question is whether the signed B2B estimate can be interpreted as ERP polarity, or whether B2B should mainly be interpreted as decodability / recoverability strength.
-"""
-
 # ╔═╡ 28932f7b-65dc-4b45-80c0-c04bea678942
 # ╠═╡ disabled = true
 #=╠═╡
@@ -33,6 +24,15 @@ begin
 	@less UnfoldSim.predef_eeg(; noiselevel = 0.1, return_epoched = true)
 end
   ╠═╡ =#
+
+# ╔═╡ 7b2076e3-1f4b-45f6-b5cd-845b4cba6734
+"""
+# B2B sign sanity check
+
+This notebook checks whether B2B estimates flip sign when the simulated generator effect is flipped.
+
+The main question is whether the signed B2B estimate can be interpreted as ERP polarity, or whether B2B should mainly be interpreted as decodability / recoverability strength.
+"""
 
 # ╔═╡ c09ea1f1-6ae5-40aa-a162-67eab79367e5
 # ================================

@@ -1,0 +1,34 @@
+Precompiling packages...
+  24815.4 ms  ✓ MScB2B
+  1 dependency successfully precompiled in 28 seconds. 612 already precompiled.
+===============================
+Standard ridge decoding
+===============================
+Active project: /store/users/xu/2025_MSc_b2b/Project.toml
+Threads: 128
+Started: 2026-08-22T20:43:43.463
+
+Configuration:
+  n_trials           = 1000
+  noiselevel         = 0.3
+  channel_noise_sd   = 0.3
+  rho                = 0.8
+  outer nfolds       = 2
+  ridge nfolds       = 2
+  ridge resolution   = 4
+  seed               = 12
+
+Simulating cases...
+Done simulating cases.
+
+Running standard decoding...
+Starting condition decoding...
+Finished condition decoding.
+Starting continuous decoding...
+Finished continuous decoding.
+
+Saved to:
+/store/users/xu/2025_MSc_b2b/results/standard_decoidng_results.jls
+
+Total time: 0.63 min
+Finished: 2026-08-22T20:44:33.040

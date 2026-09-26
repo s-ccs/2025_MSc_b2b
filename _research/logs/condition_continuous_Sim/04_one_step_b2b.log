@@ -1,0 +1,44 @@
+Precompiling packages...
+  24990.9 ms  ✓ MScB2B
+  1 dependency successfully precompiled in 31 seconds. 612 already precompiled.
+===============================
+One-step FIR + B2B
+===============================
+Active project: /store/users/xu/2025_MSc_b2b/Project.toml
+Threads: 128
+Started: 2026-08-22T15:22:04.400
+
+Simulating cases...
+Done simulating cases.
+
+Running one-step B2B...
+Startinng one-step B2B: clean
+Progress:  67%|███████████████████████████▍             |  ETA: 1:14:59[K
+   cross_val_rep: 1[K[A
+[K[AProgress: 100%|█████████████████████████████████████████| Time: 2:32:17[K
+   cross_val_rep: 3[K
+Finished one-step B2B: clean
+Startinng one-step B2B: overlap
+Progress:  67%|███████████████████████████▍             |  ETA: 0:34:47[K
+   cross_val_rep: 2[K[A
+[K[AProgress: 100%|█████████████████████████████████████████| Time: 1:13:53[K
+   cross_val_rep: 1[K
+Finished one-step B2B: overlap
+Startinng one-step B2B: confound
+Progress:  67%|███████████████████████████▍             |  ETA: 1:11:38[K
+   cross_val_rep: 1[K[A
+[K[AProgress: 100%|█████████████████████████████████████████| Time: 2:23:41[K
+   cross_val_rep: 2[K
+Finished one-step B2B: confound
+Startinng one-step B2B: both
+Progress:  67%|███████████████████████████▍             |  ETA: 0:34:41[K
+   cross_val_rep: 3[K[A
+[K[AProgress: 100%|█████████████████████████████████████████| Time: 1:09:51[K
+   cross_val_rep: 1[K
+Finished one-step B2B: both
+
+Saved to:
+/store/users/xu/2025_MSc_b2b/results/one_step_b2b_results.jls
+
+Total time: 440.0 min
+Finished: 2026-08-22T22:42:15.399

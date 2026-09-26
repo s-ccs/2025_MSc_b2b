@@ -92,9 +92,32 @@ function decode_standard_ridge(
     return scores, yhat
 end
 
+
+function fit_standard_decoding_case(
+    case_data,
+    model;
+    target::Symbol,
+    nfolds::Int,
+    seed::Int
+)
+    dat = case_data.epoched
+    evts = case_data.events_epoched
+    times = case_data.times
+
+    return decode_standard_ridge(
+        dat,
+        evts,
+        times,
+        model;
+        target = target,
+        nfolds = nfolds,
+        seed = seed
+    )
+end 
+
 function _run_standard_decoding(
-    simulation_cases,
-    cases_to_run;
+    simulation,
+    cases;
     model,
     targets,
     nfolds::Int,
@@ -104,8 +127,8 @@ function _run_standard_decoding(
     score_tables = DataFrame[]
     yhats = Dict{Tuple{Symbol, Symbol}, Matrix{Float64}}()
 
-    for case_name in cases_to_run
-        case_data = getproperty(simulation_cases, case_name)
+    for case_name in cases
+        case_data = getproperty(simulation, case_name)
         dat = case_data.epoched
         evts = case_data.events_epoched
         times = case_data.times
@@ -135,14 +158,14 @@ end
 
 function run_standard_decoding(
     cfg::ConditionContinuousConfig,
-    simulation_cases;
+    simulation;
     model = make_ridge_tuned_model(),
     target::Symbol = :continuous,
     nfolds::Int = 3,
     seed::Int = 12
 )
     return _run_standard_decoding(
-        simulation_cases,
+        simulation,
         (:clean, :overlap, :confound, :both);
         model = model,
         targets = (target,),
@@ -153,7 +176,7 @@ end
 
 function run_standard_decoding(
     cfg::CorrelatedContinuousConfig,
-    simulation_cases;
+    simulation;
     model = make_ridge_tuned_model(),
     targets = (
         :continuous1,
@@ -165,10 +188,10 @@ function run_standard_decoding(
 )
 
     return _run_standard_decoding(
-        simulation_cases,
+        simulation,
         (:no_overlap, :overlap);
         model = model,
-        targets = target,
+        targets = targets,
         nfolds = nfolds,
         seed = seed
     )

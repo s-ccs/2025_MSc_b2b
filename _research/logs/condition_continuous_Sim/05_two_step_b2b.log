@@ -1,0 +1,29 @@
+===============================
+05 - two-step B2B
+===============================
+Active project: /store/users/xu/2025_MSc_b2b/Project.toml
+Threads: 128
+Started: 2026-08-22T23:57:25.830
+
+Configuration:
+  n_trials           = 1000
+  noiselevel         = 0.3
+  channel_noise_sd   = 0.3
+  rho                = 0.8
+  cross val reps       = 3
+  seed               = 12
+
+Simulating cases...
+Done simulating cases.
+
+Running two-step B2B...
+Progress:  10%|████▏                                    |  ETA: 0:00:04[KProgress:  20%|████████▎                                |  ETA: 0:00:03[KProgress:  30%|████████████▎                            |  ETA: 0:00:02[KProgress:  40%|████████████████▍                        |  ETA: 0:00:02[KProgress:  50%|████████████████████▌                    |  ETA: 0:00:01[KProgress:  60%|████████████████████████▋                |  ETA: 0:00:01[KProgress:  70%|████████████████████████████▊            |  ETA: 0:00:01[KProgress:  80%|████████████████████████████████▊        |  ETA: 0:00:00[KProgress:  90%|████████████████████████████████████▉    |  ETA: 0:00:00[KProgress: 100%|█████████████████████████████████████████| Time: 0:00:01[K
+Progress:  35%|██████████████▍                          |  ETA: 0:00:00[KProgress:  70%|████████████████████████████▊            |  ETA: 0:00:00[KProgress: 100%|█████████████████████████████████████████| Time: 0:00:00[K
+Progress:  10%|████▏                                    |  ETA: 0:00:02[KProgress:  20%|████████▎                                |  ETA: 0:00:01[KProgress:  30%|████████████▎                            |  ETA: 0:00:01[KProgress:  40%|████████████████▍                        |  ETA: 0:00:01[KProgress:  50%|████████████████████▌                    |  ETA: 0:00:01[KProgress:  60%|████████████████████████▋                |  ETA: 0:00:01[KProgress:  70%|████████████████████████████▊            |  ETA: 0:00:01[KProgress:  80%|████████████████████████████████▊        |  ETA: 0:00:00[KProgress:  90%|████████████████████████████████████▉    |  ETA: 0:00:00[KProgress: 100%|█████████████████████████████████████████| Time: 0:00:01[K
+Progress:  15%|██████▏                                  |  ETA: 0:00:01[KProgress:  45%|██████████████████▌                      |  ETA: 0:00:00[KProgress:  75%|██████████████████████████████▊          |  ETA: 0:00:00[KProgress: 100%|█████████████████████████████████████████| Time: 0:00:00[K
+
+Saved to:
+/store/users/xu/2025_MSc_b2b/results/05_two_step_b2b_results.jls
+
+Total time: 2.63 min
+Finished: 2026-08-23T00:00:14.569

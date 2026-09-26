@@ -2,7 +2,10 @@
 Base.@kwdef struct CorrelatedContinuousConfig
     n_trials::Int = 1500
     sfreq::Float64 = 100.0
-    rho::Float64 = 0.8
+
+    rho12::Float64 = 0.8
+    rho13::Float64 = 0.8
+    rho23::Float64 = 0.8
 
     n_channels::Int = 20
     noiselevel::Float64 = 0.3
@@ -37,7 +40,9 @@ end
 # 2. Design
 Base.@kwdef struct CorrelatedContinuousDesign <: UnfoldSim.AbstractDesign
     n_trials::Int 
-    rho::Float64 
+    rho12::Float64 
+    rho13::Float64
+    rho23::Float64
 end
 
 UnfoldSim.size(design::CorrelatedContinuousDesign) = (design.n_trials,)
@@ -47,14 +52,15 @@ function UnfoldSim.generate_events(
     rng::AbstractRNG,
     design::CorrelatedContinuousDesign
 )
-    ρ = design.rho
+
     # positive definite covariance matrix
     Σ = [
-        1.0  ρ    ρ
-        ρ    1.0  ρ
-        ρ    ρ    1.0
+        1.0             design.rho12    design.rho13
+        design.rho12    1.0             design.rho23
+        design.rho13    design.rho23    1.0
     ]
 
+    @assert issymmetric(Σ)
     @assert isposdef(Symmetric(Σ))
 
     X = rand(
@@ -122,11 +128,18 @@ function make_corr_cont_onset(
     cfg::CorrelatedContinuousConfig;
     overlap::Bool = false
 )
+    #if !overlap
+    #    max_component_length = maximum([
+    #        length(UnfoldSim.p100(; sfreq = cfg.sfreq)),
+    #        length(UnfoldSim.n170(; sfreq = cfg.sfreq)),
+    #        length(UnfoldSim.p300(; sfreq = cfg.sfreq))
+    #    ])
+
     if !overlap
         max_component_length = maximum([
-            length(UnfoldSim.p100(; sfreq = cfg.sfreq)),
-            length(UnfoldSim.n170(; sfreq = cfg.sfreq)),
-            length(UnfoldSim.p300(; sfreq = cfg.sfreq))
+            length(UnfoldSim.hanning(cfg.component_width, cfg.peak1, cfg.sfreq)),
+            length(UnfoldSim.hanning(cfg.component_width, cfg.peak2, cfg.sfreq)),
+            length(UnfoldSim.hanning(cfg.component_width, cfg.peak3, cfg.sfreq))
         ])
 
         return UnfoldSim.UniformOnset(
@@ -162,7 +175,7 @@ function simulator_corr_cont(
     epoch_window = (-0.1, 1.0)
 )
     rng = MersenneTwister(seed)
-    design = CorrelatedContinuousDesign(cfg.n_trials, cfg.rho)
+    design = CorrelatedContinuousDesign(cfg.n_trials, cfg.rho12, cfg.rho13, cfg.rho23)
     components = make_corr_cont_components(cfg)
     onset = make_corr_cont_onset(cfg; overlap = overlap)
     noise = UnfoldSim.PinkNoise(noiselevel = cfg.noiselevel)

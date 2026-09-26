@@ -24,3 +24,12 @@ docs/site/
 *.asv
 *.m~
 
+*.jls
+
+.venv/
+.venv_old/
+__pycache__/
+.ipynb_checkpoints/
+.CondaPkg/
+
+ROAMM_preprocessing/outputs/

@@ -1,6 +1,7 @@
-function fit_two_step_b2b_case(
+function _fit_two_step_b2b_case(
 	cfg,
-	case_data;
+	case_data,
+	formula;
 	cross_val_reps::Int 
 ) 
 	
@@ -11,7 +12,7 @@ function fit_two_step_b2b_case(
 	# Step 1: Fit rERP model to continuous EEG data
 	design_rerp = [
 		"stimulus" => (
-			@formula(0 ~ 1 + condition + continuous),
+			formula,
 			Unfold.firbasis(
 				τ = [-0.1, 1.0],
 				sfreq = cfg.sfreq
@@ -40,13 +41,12 @@ function fit_two_step_b2b_case(
 	
 	design_two_step_b2b = [
 		"stimulus" => (
-			@formula(0 ~ 1 + condition + continuous),
+			formula,
 			times,
 		)
 	]
 
 	b2b_solver = (X, y) -> begin
-		
 		X_clean, y_clean = Unfold.drop_missing_epochs(X, y)
 		X_clean = Float64.(X_clean)
 
@@ -72,20 +72,24 @@ function fit_two_step_b2b_case(
 	)
 end 
 
-function run_two_step_b2b(
+
+function _run_two_step_b2b(
 	cfg,
-	cases;
+	simulation,
+	cases,
+	formula;
 	cross_val_reps::Int
 )
 	score_tables = DataFrame[]
 	fitted_models = Dict{Symbol, Any}()
 
-	for case_name in (:clean, :overlap, :confound, :both,)
-		case_data = getproperty(cases, case_name)
+	for case_name in cases
+		case_data = getproperty(simulation, case_name)
 
-		two_step_b2b_fit = fit_two_step_b2b_case(
+		two_step_b2b_fit = _fit_two_step_b2b_case(
 			cfg,
-			case_data;
+			case_data,
+			formula;
 			cross_val_reps = cross_val_reps,
 		)
 
@@ -109,5 +113,38 @@ function run_two_step_b2b(
 	return (
 		score_tables = vcat(score_tables...),
 		fitted_models = fitted_models
+	)
+end
+
+
+function run_two_step_b2b(
+	cfg::ConditionContinuousConfig,
+	simulation;
+	cross_val_reps::Int = 3
+)
+	formula = @formula(0 ~ 1 + condition + continous)
+
+	return _run_two_step_b2b(
+		cfg,
+		simulation,
+		(:clean, :overlap, :confound, :both),
+		formula;
+		cross_val_reps = cross_val_reps
+	)
+end
+
+function run_two_step_b2b(
+	cfg::CorrelatedContinuousConfig,
+	simulation;
+	cross_val_reps::Int = 3
+)
+	formula = @formula(0 ~ 1 + continuous1 + continuous2 + continuous3)
+
+	return _run_two_step_b2b(
+		cfg,
+		simulation,
+		(:no_overlap, :overlap),
+		formula;
+		cross_val_reps = cross_val_reps
 	)
 end

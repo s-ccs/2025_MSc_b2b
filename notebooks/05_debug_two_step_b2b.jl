@@ -47,7 +47,7 @@ Controls = @ingredients(joinpath(@__DIR__, "simulation_controls.jl"))
 
 # ╔═╡ 266b38ea-3fee-45dd-bf3a-5504e4177227
 cfg = MScB2B.SimulationConfig(
-    n_trials = sim.n_trials,
+    n_trials = 1500,
 
     noiselevel = sim.noiselevel,
     channel_noise_sd = sim.channel_noise_sd,

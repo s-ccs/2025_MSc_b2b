@@ -44,9 +44,10 @@ function UnfoldDecode.solver_b2b(                     # when T is a number,
 end
 
 
-function fit_one_step_b2b_case(
+function _fit_one_step_b2b_case(
     cfg,
-    case_data;
+    case_data,
+    formula_b2b;
     cross_val_reps::Int
 )
 
@@ -55,7 +56,7 @@ function fit_one_step_b2b_case(
 
     design_one_step_b2b = [
         "stimulus" => (
-            @formula(0 ~ 1 + condition + continuous),
+            formula_b2b,
             Unfold.firbasis(
                 τ = [-0.1, 1.0],
                 sfreq = cfg.sfreq
@@ -70,24 +71,27 @@ function fit_one_step_b2b_case(
     )
 end
 
-function run_one_step_b2b(
+function _run_one_step_b2b(
     cfg,
-    cases;
+    simulation,
+    cases,
+    formula_b2b;
     cross_val_reps::Int
 )   
     score_tables = DataFrame[]
     fitted_models = Dict{Symbol, Any}()
 
-    for case_name in (:clean, :overlap, :confound, :both,)
+    for case_name in cases
 
         println("Starting one-step B2B: $case_name")
         flush(stdout)
 
-        case_data = getproperty(cases, case_name)
+        case_data = getproperty(simulation, case_name)
 
-        uf_one_step_b2b = fit_one_step_b2b_case(
+        uf_one_step_b2b = _fit_one_step_b2b_case(
             cfg,
-            case_data;
+            case_data,
+            formula_b2b;
             cross_val_reps = cross_val_reps
         )
 
@@ -113,5 +117,37 @@ function run_one_step_b2b(
     return (
         score_tables = vcat(score_tables...),
         fitted_models = fitted_models
+    )
+end
+
+function run_one_step_b2b(
+    cfg::ConditionContinuousConfig,
+    simulation;
+    cross_val_reps::Int = 3
+)
+    formula_b2b = @formula(0 ~ 1 + condition + continuous)
+
+    return _run_one_step_b2b(
+        cfg,
+        simulation,
+        (:clean, :overlap, :confound, :both),
+        formula_b2b;
+        cross_val_reps = cross_val_reps
+    )
+end
+
+function run_one_step_b2b(
+    cfg::CorrelatedContinuousConfig,
+    simulation;
+    cross_val_reps::Int = 3
+)
+    formula_b2b = @formula(0 ~ 1 + continuous1 + continuous2 + continuous3)
+
+    return _run_one_step_b2b(
+        cfg,
+        simulation,
+        (:no_overlap, :overlap),
+        formula_b2b;
+        cross_val_reps = cross_val_reps
     )
 end

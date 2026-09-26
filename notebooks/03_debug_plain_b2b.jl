@@ -80,28 +80,6 @@ cfg = MScB2B.SimulationConfig(
 # ╔═╡ 72658d97-4c75-4d0e-bd15-e1329457de3b
 cases = MScB2B.simulate_cases(cfg)
 
-# ╔═╡ c1da4a39-547c-4a07-bac0-1d85e403aacf
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	save(
-	    "figures/fig_plain_b2b_condition_no_p300.svg",
-	     fig_plain_b2b_condition_no_p300,
-	)
-	
-	save(
-		"figures/clean_condition_signed_b2b_no_p300.svg",
-		clean_condition_signed_b2b_no_p300,
-	)
-
-	save(
-		"figures/fig_plain_b2b_continuous_no_p300.svg",
-		fig_plain_b2b_continuous_no_p300,
-	)
-
-end
-  ╠═╡ =#
-
 # ╔═╡ 58c8a219-a62f-41db-98d9-3933348d9584
 
 
@@ -150,182 +128,13 @@ uf_clean = MScB2B.fit_plain_b2b_case(
     cross_val_reps = 3,
 )
 
-# ╔═╡ d31c92d0-09f9-483e-a6e4-8a9c155ee52d
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	res_clean = coeftable(uf_clean)
-
-	UnfoldMakie.plot_erp(
-	    res_clean;
-	    mapping = (; color = :coefname),
-	)
-end
-  ╠═╡ =#
-
 # ╔═╡ 8bce183b-421b-4eea-85ec-d7e0afcb5cc4
 
 
-# ╔═╡ 9187fc47-924a-4438-8b00-4415f30d8f7b
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	md"""### Null control
-	
-	β_condition = 0  
-	β_continuous = 0  
-	β0_n170 = 0  
-	β0_p300 = 0  
-	ρ = 0
-	
-	Expected:
-	No systematic B2B recovery.
-	
-	Result:
-	Condition and continuous estimates fluctuate around zero.
-	✓ Passed
-	"""
-	
-	
-	res_clean = coeftable(uf_clean)
-
-	UnfoldMakie.plot_erp(
-		res_clean;
-		mapping = (; color = :coefname),
-	)
-	
-end
-  ╠═╡ =#
-
-# ╔═╡ 6f21484d-e2e7-49f9-bdba-7c6ab6361c26
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	md"""
-	β_condition = 3
-	Shift onset by one = false
-	Onset condition bias = 0
-	"""
-
-
-	res_clean = coeftable(uf_clean)
-	#res_clean.estimate = abs.(res_clean.estimate)
-	res_clean = filter(:coefname => !=("(Intercept)"), res_clean)
-	
-	UnfoldMakie.plot_erp(
-	    res_clean;
-	    mapping = (; color = :coefname),
-	    axis = (; ylabel = "B2B estimate"),
-	)
-end
-  ╠═╡ =#
-
-# ╔═╡ 84e1c5c4-3bc7-456e-b0f1-6a9e10ef2435
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	md"""
-	β_condition = 0
-	β_continuous = 3   
-	
-	β0_n170 = 0
-	β0_p300 = 0
-	
-	rho = 0
-	onset_condition_bias = 0
-	shift_onset = false
-	"""
-	res_clean  = coeftable(uf_clean)
-	res_clean.estimate = abs.(res_clean.estimate)
-	res_clean = filter(:coefname => !=("(Intercept)"), res_clean)
-	
-	UnfoldMakie.plot_erp(
-	    res_clean;
-	    mapping = (; color = :coefname),
-	    axis = (; ylabel = "B2B estimate"),
-	)
-end
-	
-  ╠═╡ =#
-
-# ╔═╡ 2b5be1b0-9dbe-4b11-9585-c22f5fc2cb98
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	md"""
-	β_condition = 3
-	β_continuous = 3
-	rho = 0
-	
-	β0_n170 = 0
-	β0_p300 = 0
-	onset_condition_bias = 0
-	shift_onset = false
-	"""
-	res_clean  = coeftable(uf_clean)
-	res_clean.estimate = abs.(res_clean.estimate)
-	res_clean = filter(:coefname => !=("(Intercept)"), res_clean)
-	
-	UnfoldMakie.plot_erp(
-	    res_clean;
-	    mapping = (; color = :coefname),
-	    axis = (; ylabel = "B2B estimate"),
-	)
-end
-	
-  ╠═╡ =#
-
-# ╔═╡ 9713e635-4dc0-4156-a799-184f37de4063
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	md"""
-	β_condition = 3
-	β_continuous = 3
-	rho = 0.8
-	
-	β0_n170 = 0
-	β0_p300 = 0
-	onset_condition_bias = 0
-	shift_onset = false
-	"""
-	res_clean  = coeftable(uf_clean)
-	res_clean.estimate = abs.(res_clean.estimate)
-	res_clean = filter(:coefname => !=("(Intercept)"), res_clean)
-	
-	UnfoldMakie.plot_erp(
-	    res_clean;
-	    mapping = (; color = :coefname),
-	    axis = (; ylabel = "B2B estimate"),
-	)
-end
-  ╠═╡ =#
-
-# ╔═╡ d43594a5-af65-460d-bacf-287398e1340b
-begin
-	md"""
-	β_condition = 3
-	β_continuous = 3
-	rho = 0.8
-	
-	β0_n170 = 0
-	β0_p300 = 0
-	onset_condition_bias = 0
-	shift_onset = false
-	"""
-	res_clean  = coeftable(uf_clean)
-	res_clean.estimate = abs.(res_clean.estimate)
-	res_clean = filter(:coefname => !=("(Intercept)"), res_clean)
-	
-	UnfoldMakie.plot_erp(
-	    res_clean;
-	    mapping = (; color = :coefname),
-	    axis = (; ylabel = "B2B estimate"),
-	)
-end
-
 # ╔═╡ c33d32db-f97a-4a76-bc5b-ace5f9635f55
+#=╠═╡
 extrema(res_clean.time)
+  ╠═╡ =#
 
 # ╔═╡ 8a4cee87-23ba-4670-8e3b-d0a15de7a178
 
@@ -379,20 +188,17 @@ fig_plain_b2b_continuous = MScB2B.plot_b2b_grid(
 
 
 # ╔═╡ 5ebd807f-1640-4b8a-96ee-8faada6a2f17
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	save(
-		"03_plain_b2b_condition_hanning_1500trials_long_windows.svg",
+		"03_plain_b2b_condition_1500trials_long_windows_500hz.svg",
 		fig_plain_b2b_condition
 	)
 
 	save(
-		"03_plain_b2b_continuous_hanning_1500trials_long_windows.svg",
+		"03_plain_b2b_continuous_1500trials_long_windows_500hz.svg",
 		fig_plain_b2b_continuous
 	)
 end
-  ╠═╡ =#
 
 # ╔═╡ 88aef0ba-9559-49e3-b4b2-6f12fa93d2ca
 # ╠═╡ disabled = true
@@ -456,6 +262,28 @@ clean_condition_signed_b2b_no_p300 = lines(
         title = "Clean condition B2B — signed",
     ),
 )
+
+# ╔═╡ c1da4a39-547c-4a07-bac0-1d85e403aacf
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	save(
+	    "figures/fig_plain_b2b_condition_no_p300.svg",
+	     fig_plain_b2b_condition_no_p300,
+	)
+	
+	save(
+		"figures/clean_condition_signed_b2b_no_p300.svg",
+		clean_condition_signed_b2b_no_p300,
+	)
+
+	save(
+		"figures/fig_plain_b2b_continuous_no_p300.svg",
+		fig_plain_b2b_continuous_no_p300,
+	)
+
+end
+  ╠═╡ =#
 
 # ╔═╡ 847dc5b8-6edc-4ba9-a50a-57e05d9f8ee7
 clean_1ch = merge(
@@ -904,6 +732,179 @@ end
 
 # ╔═╡ 679b95bd-8417-4c02-97af-81fb56874142
 
+
+# ╔═╡ 9713e635-4dc0-4156-a799-184f37de4063
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	md"""
+	β_condition = 3
+	β_continuous = 3
+	rho = 0.8
+	
+	β0_n170 = 0
+	β0_p300 = 0
+	onset_condition_bias = 0
+	shift_onset = false
+	"""
+	res_clean  = coeftable(uf_clean)
+	res_clean.estimate = abs.(res_clean.estimate)
+	res_clean = filter(:coefname => !=("(Intercept)"), res_clean)
+	
+	UnfoldMakie.plot_erp(
+	    res_clean;
+	    mapping = (; color = :coefname),
+	    axis = (; ylabel = "B2B estimate"),
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ d43594a5-af65-460d-bacf-287398e1340b
+#=╠═╡
+begin
+	md"""
+	β_condition = 3
+	β_continuous = 3
+	rho = 0.8
+	
+	β0_n170 = 0
+	β0_p300 = 0
+	onset_condition_bias = 0
+	shift_onset = false
+	"""
+	res_clean  = coeftable(uf_clean)
+	res_clean.estimate = abs.(res_clean.estimate)
+	res_clean = filter(:coefname => !=("(Intercept)"), res_clean)
+	
+	UnfoldMakie.plot_erp(
+	    res_clean;
+	    mapping = (; color = :coefname),
+	    axis = (; ylabel = "B2B estimate"),
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ 9187fc47-924a-4438-8b00-4415f30d8f7b
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	md"""### Null control
+	
+	β_condition = 0  
+	β_continuous = 0  
+	β0_n170 = 0  
+	β0_p300 = 0  
+	ρ = 0
+	
+	Expected:
+	No systematic B2B recovery.
+	
+	Result:
+	Condition and continuous estimates fluctuate around zero.
+	✓ Passed
+	"""
+	
+	
+	res_clean = coeftable(uf_clean)
+
+	UnfoldMakie.plot_erp(
+		res_clean;
+		mapping = (; color = :coefname),
+	)
+	
+end
+  ╠═╡ =#
+
+# ╔═╡ d31c92d0-09f9-483e-a6e4-8a9c155ee52d
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	res_clean = coeftable(uf_clean)
+
+	UnfoldMakie.plot_erp(
+	    res_clean;
+	    mapping = (; color = :coefname),
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ 6f21484d-e2e7-49f9-bdba-7c6ab6361c26
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	md"""
+	β_condition = 3
+	Shift onset by one = false
+	Onset condition bias = 0
+	"""
+
+
+	res_clean = coeftable(uf_clean)
+	#res_clean.estimate = abs.(res_clean.estimate)
+	res_clean = filter(:coefname => !=("(Intercept)"), res_clean)
+	
+	UnfoldMakie.plot_erp(
+	    res_clean;
+	    mapping = (; color = :coefname),
+	    axis = (; ylabel = "B2B estimate"),
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ 84e1c5c4-3bc7-456e-b0f1-6a9e10ef2435
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	md"""
+	β_condition = 0
+	β_continuous = 3   
+	
+	β0_n170 = 0
+	β0_p300 = 0
+	
+	rho = 0
+	onset_condition_bias = 0
+	shift_onset = false
+	"""
+	res_clean  = coeftable(uf_clean)
+	res_clean.estimate = abs.(res_clean.estimate)
+	res_clean = filter(:coefname => !=("(Intercept)"), res_clean)
+	
+	UnfoldMakie.plot_erp(
+	    res_clean;
+	    mapping = (; color = :coefname),
+	    axis = (; ylabel = "B2B estimate"),
+	)
+end
+	
+  ╠═╡ =#
+
+# ╔═╡ 2b5be1b0-9dbe-4b11-9585-c22f5fc2cb98
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	md"""
+	β_condition = 3
+	β_continuous = 3
+	rho = 0
+	
+	β0_n170 = 0
+	β0_p300 = 0
+	onset_condition_bias = 0
+	shift_onset = false
+	"""
+	res_clean  = coeftable(uf_clean)
+	res_clean.estimate = abs.(res_clean.estimate)
+	res_clean = filter(:coefname => !=("(Intercept)"), res_clean)
+	
+	UnfoldMakie.plot_erp(
+	    res_clean;
+	    mapping = (; color = :coefname),
+	    axis = (; ylabel = "B2B estimate"),
+	)
+end
+	
+  ╠═╡ =#
 
 # ╔═╡ Cell order:
 # ╠═8342e65e-a91b-4124-9f4f-9ebcb501fbe2

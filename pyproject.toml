@@ -1,0 +1,12 @@
+[project]
+name = "2025-msc-b2b"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "ipykernel>=7.3.0",
+    "jupyterlab>=4.6.3",
+    "pandas>=3.0.6",
+    "torch>=2.14.0",
+    "transformers>=5.17.0",
+    "wordfreq>=3.1.1",
+]
