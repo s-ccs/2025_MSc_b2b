@@ -40,7 +40,7 @@ function UnfoldSim.generate_events(
 
     shuffle!(rng, condition)
 
-    condition_num = ifelse.(condition .== "face", 1.0, -1.0)
+    condition_num = ifelse.(condition .== "face", 1.0, -1.0) # face = 1, car = -1
 
     if design.confound
         continuous = 
@@ -99,7 +99,7 @@ function make_cond_cont_onset(
     end
 
     # Overlap case
-    σ = 0.35
+    σ = 0.35 #SD of log inter-event intervals 
 
     target_mean_samples = cfg.overlap_interval_ms / 1000 * cfg.sfreq
     μ0 = log(target_mean_samples) - σ^2 / 2
@@ -107,11 +107,11 @@ function make_cond_cont_onset(
     onset = UnfoldSim.LogNormalOnsetFormula(
         μ_formula = @formula(0 ~ 1 + condition),
         μ_β = [
-            μ0,    # car/reference-level log-onset mean
-            cfg.onset_condition_bias,], # face minus car difference
+            μ0,    # car/reference-level: log-scale mean onset interval
+            cfg.onset_condition_bias,], # -0.6: face intervals are shorter, more temporal overlap
 
         σ_β = [σ],
-        offset_β = [0.0],
+        offset_β = [0.0], # do not shift the whole distribution right or left
         truncate_upper = nothing
     )
     

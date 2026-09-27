@@ -22,7 +22,7 @@ Base.@kwdef struct CorrelatedContinuousConfig
     β_p300::Float64 = 1.5
     """
 
-    component_width::Float64 = 0.15
+    component_width::Float64 = 0.15 # hanning component width in seconds
 
     peak1::Float64 = 0.15
     peak2::Float64 = 0.45
@@ -156,8 +156,8 @@ function make_corr_cont_onset(
     onset = UnfoldSim.LogNormalOnsetFormula(
         μ_formula = @formula(0 ~ 1 + continuous1),
         μ_β = [
-            μ0,
-            cfg.onset_predictor_bias
+            μ0, # log-mean interval when continuous1 =0
+            cfg.onset_predictor_bias # higher continuous1, shorter intervals
         ],
 
         σ_β = [σ],
