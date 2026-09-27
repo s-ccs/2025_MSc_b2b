@@ -122,7 +122,7 @@ function run_two_step_b2b(
 	simulation;
 	cross_val_reps::Int = 3
 )
-	formula = @formula(0 ~ 1 + condition + continous)
+	formula = @formula(0 ~ 1 + condition + continuous)
 
 	return _run_two_step_b2b(
 		cfg,

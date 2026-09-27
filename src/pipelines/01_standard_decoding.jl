@@ -1,6 +1,6 @@
 MLJ.machine(
-    model::RidgeRegressor,
-    X::AbstractMatrix{Float64},
+    model::RidgeRegressor,       # Adapter: allow MLJ RidgeRegressor to accept matrix-valued inputs
+    X::AbstractMatrix{Float64},  # by converting trials x channels matrices to an MLJ table
     y::AbstractVector{Float64};
     kwargs...,
 ) = MLJ.machine(model,
