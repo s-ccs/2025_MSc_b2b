@@ -8,7 +8,7 @@ using InteractiveUtils
 begin
 	using Markdown
 	using InteractiveUtils
-	#using CairoMakie
+	using CairoMakie
 	using WGLMakie
 	using UnfoldDecode
 	using Random, DataFrames
@@ -19,161 +19,14 @@ end
 # ╔═╡ be4c9d6a-9acf-46aa-8917-219d8d15b517
 WGLMakie.Page()
 
-# ╔═╡ 24d1b9e1-9371-4c4d-b682-9f92eeb7efcd
-H[:, 3]
-
-
-# ╔═╡ d18bd04e-4c59-41b9-be3b-fa8d8e02fff4
-diag(H)
-
-# ╔═╡ 0da05e23-6609-4b2a-97f1-a453d0459894
-XH
-
-
-
-# ╔═╡ e41102fa-bc47-4342-945b-c0ff80e35676
-X
-
-# ╔═╡ d33c90e7-6a12-4630-adfd-e5f2d08877d5
-scatter(Point3f.(eachrow(XH)))
-
-# ╔═╡ 26011893-e374-4ec5-bb6f-731fe3586eca
-let
-f,ax,h =scatter(Point3f.(eachrow(XH)))
-scatter!(Point3f.(eachrow(X_bar)))
-f
-end
-
-# ╔═╡ fe7ae47b-8cdf-4a0e-ae1e-d233705adc98
-let
-f,ax,h =scatter(Point3f.(eachrow(X)))
-scatter!(Point3f.(eachrow(X_bar)))
-f
-end
-
-# ╔═╡ 380cbdc1-cefb-4b95-8e66-642c7d63ea04
-# =====================================
-# Evaluation
-# =====================================
-
-begin
-    # ---------------------------------
-    # 1) column-wise Pearson r, then mean
-    # ---------------------------------
-    function r_score_uniform(X, Y)
-        if ndims(X) == 1
-            X = reshape(X, :, 1)
-        end
-        if ndims(Y) == 1
-            Y = reshape(Y, :, 1)
-        end
-
-        @assert size(X) == size(Y)
-
-        R = zeros(size(X, 2))
-        for j in 1:size(X, 2)
-            if std(X[:, j]) == 0 || std(Y[:, j]) == 0
-                R[j] = 0.0
-            else
-                R[j] = cor(X[:, j], Y[:, j])
-            end
-        end
-        return mean(R)
-    end
-
-    # ---------------------------------
-    # 2) column-wise RMSE
-    # ---------------------------------
-    function rmse_score(X, Y; raw=false)
-        if ndims(X) == 1
-            X = reshape(X, :, 1)
-        end
-        if ndims(Y) == 1
-            Y = reshape(Y, :, 1)
-        end
-
-        @assert size(X) == size(Y)
-
-        R = zeros(size(X, 2))
-        for j in 1:size(X, 2)
-            R[j] = sqrt(mean((X[:, j] .- Y[:, j]) .^ 2))
-        end
-
-        return raw ? R : mean(R)
-    end
-
-    # ---------------------------------
-    # 3) paper-style ΔR
-    # ---------------------------------
-    function deltaR_uniform(X_test, Y_test, H, G)
-        YG = Y_test * G
-        XH = X_test * H
-
-        R_full = r_score_uniform(XH, YG)
-
-        p = size(X_test, 2)
-        ΔR = zeros(p)
-        R_k = zeros(p)
-
-        for i in 1:p
-            K = Matrix(I, p, p)
-            K[i, i] = 0.0
-
-            XKH = X_test * K * H
-            R_k[i] = r_score_uniform(XKH, YG)
-            ΔR[i] = R_full - R_k[i]
-        end
-
-        return ΔR, R_full, R_k
-    end
-end
-
-# ╔═╡ 297c16b4-60dc-4ec8-955a-5469eb0adada
-#=╠═╡
-begin
-	fmt(x) = round.(x, digits=2)
-    YG = Y_test * G
-
-    ΔR, R_full, R_k = deltaR_uniform(X_test, Y_test, H, G)
-
-    rmse_full = rmse_score(XH, YG)
-    rmse_cols = rmse_score(XH, YG; raw=true)
-
-    println("cor(X_all) =")
-    display(fmt(cor(X_all)))
-
-    println("decode_score = ", fmt(decode_score))
-    println("diag(H)      = ", fmt(hdiag))
-    println("H[:,3]       = ", fmt(H[:,3]))
-
-    println("R_full       = ", fmt(R_full))
-    println("R_k          = ", fmt(R_k))
-    println("ΔR           = ", fmt(ΔR))
-
-    println("RMSE_full    = ", fmt(rmse_full))
-    println("RMSE_cols    = ", fmt(rmse_cols))
-end
-  ╠═╡ =#
-
-# ╔═╡ dafbcaa6-4ec4-46bc-b6f7-769a83396c77
-# ╠═╡ disabled = true
-#=╠═╡
-# 3) observations Y = X*F + noise
-begin
-	Y = X * F' + rand(MersenneTwister(1),length(f₁),length(x₁))'
-	Y_test = X * F' + rand(MersenneTwister(2),length(f₁),length(x₁))'
-end
-  ╠═╡ =#
-
 # ╔═╡ 7def2480-d73b-412b-84c6-30809fc48b01
-#=╠═╡
 begin
 
 
 	# -----------------------------------------
 	# 0) helper
 	# -----------------------------------------
-	rng = MersenneTwister(12)
+	rng = MersenneTwister(13)
 	bernoulli01(rng, n, p=0.5) = Float64.(rand(rng, n) .< p)
 
 	# -----------------------------------------
@@ -186,10 +39,10 @@ begin
 	x₂ = randn(rng, n)
 
 	# correlated but non-causal feature
-	x₃ = randn(rng,n)
-	#x₃ = 0.8 .* x₁ 
-	# .+ 0.4 .* randn(rng, n) 
-	# x₃ = Float64.((x₁ .+ (rand(rng, n) .< 0.15)) .> 0)
+	# x₃ = randn(rng,n)
+	x₃ = 0.8 .* x₁ 
+	 .+ 0.4 .* randn(rng, n) 
+	x₃ = Float64.((x₁ .+ (rand(rng, n) .< 0.15)) .> 0)
 
 	X_all = hcat(x₁, x₂, x₃)   # 200 × 3
 	C = cor(X_all)
@@ -256,7 +109,7 @@ begin
 	hdiag = diag(H)
 
 	feature_names = ["x₁", "x₂", "x₃"]
-	feat_colors = [:dodgerblue, :dodgerblue, :gray70]
+	feat_colors = ["#2B8EF3", "#2B8EF3", "#E5A13A"]
 
 	# -----------------------------------------
 	# 8) Plot-4 coordinates: real 3D, no projection needed
@@ -270,8 +123,128 @@ begin
 	# -----------------------------------------
 	# 9) figure
 	# -----------------------------------------
-	fig = Figure(size = (700, 750))
+	fig = Figure(size = (1200, 720))
 
+# =============================================
+# Plots
+# =============================================
+	
+	# -----------------------------------------
+	# Plot 1: Ground truth diag(S)
+	# -----------------------------------------
+	ax1 = Axis(
+		fig[1, 1],
+		title = "1. Ground truth: diag(S)",
+		xlabel = "feature",
+		ylabel = "true contribution"
+	)
+
+	barplot!(ax1, 1:3, true_contrib, color = feat_colors)
+	scatter!(ax1, 1:3, true_contrib, color = :black, markersize = 12)
+	ax1.xticks = (1:3, feature_names)
+	ylims!(ax1, -0.05, 1.12)
+
+	for i in 1:3
+		text!(ax1, i, true_contrib[i],
+			text = string(round(true_contrib[i], digits = 2)),
+			align = (:center, :bottom))
+	end
+
+	# -----------------------------------------
+	# Plot 2: Step 1 decodability
+	# -----------------------------------------
+	ax2 = Axis(
+		fig[1, 2],
+		title = "2. Step 1: decodability",
+		xlabel = "feature",
+		ylabel = "decodability (correlation)"
+	)
+
+	barplot!(ax2, 1:3, decode_score, color = feat_colors)
+	scatter!(ax2, 1:3, decode_score, color = :black, markersize = 12)
+	ax2.xticks = (1:3, feature_names)
+	hlines!(ax2, [0.0], linestyle = :dash, color = :black)
+	ylims!(ax2, -0.05, 1.05)
+
+	for i in 1:3
+		text!(ax2, i, decode_score[i],
+			text = string(round(decode_score[i], digits = 2)),
+			align = decode_score[i] >= 0 ? (:center, :bottom) : (:center, :top))
+	end
+
+	# -----------------------------------------
+	# Plot 3: Step 2 diag(H)
+	# -----------------------------------------
+	ax3 = Axis(
+		fig[1, 3],
+		title = "3. Step 2: diag(H)",
+		xlabel = "feature",
+		ylabel = "recoverable contribution"
+	)
+
+	barplot!(ax3, 1:3, hdiag, color = feat_colors)
+	scatter!(ax3, 1:3, hdiag, color = :black, markersize = 12)
+	ax3.xticks = (1:3, feature_names)
+	hlines!(ax3, [0.0], linestyle = :dash, color = :black)
+	ylims!(ax3, -0.05, 0.90)
+
+	for i in 1:3
+		text!(ax3, i, hdiag[i],
+			text = string(round(hdiag[i], digits = 2)),
+			align = hdiag[i] >= 0 ? (:center, :bottom) : (:center, :top))
+	end
+
+	# -----------------------------------------
+	# Plot 4: direct 3D comparison
+	#         X_test*H vs X̄ = Y_test*G
+	# -----------------------------------------
+	ax4 = Axis3(
+		fig[2, 1],
+		title = "4. 3D comparison: X_test*H vs X̄ = Y_test*G",
+		xlabel = "component 1",
+		ylabel = "component 2",
+		zlabel = "component 3",
+		azimuth = 1.0,
+		elevation = 0.32,
+		perspectiveness = 0.35
+	)
+
+	scatter!(
+		ax4,
+		XH3j[:, 1], XH3j[:, 2], XH3j[:, 3],
+		color = (:dodgerblue, 0.72),
+		marker = :circle,
+		markersize = 10,
+		label = "X_test * H"
+	)
+
+	scatter!(
+		ax4,
+		X_bar[:, 1], X_bar[:, 2], X_bar[:, 3],
+		color = (:orange, 0.72),
+		marker = :utriangle,
+		markersize = 10,
+		label = "X̄ = Y_test * G"
+	)
+
+
+	
+	Label(
+		fig[3, 1:3],
+		"Top row: true contribution → what is decodable → what B2B recovers. Bottom: blue = X_test*H, orange = X̄ = Y_test*G.",
+		fontsize = 18
+	)
+
+	colgap!(fig.layout, 24)
+	rowgap!(fig.layout, 14)
+
+	fig
+	save("midterm_b2b_demo.svg", fig)
+end
+
+# ╔═╡ 7c73db32-637a-4c7f-8267-af74ca6f0cb8
+# ╠═╡ disabled = true
+#=╠═╡
 # =============================================
 # Plots
 # =============================================
@@ -388,9 +361,154 @@ begin
 end
   ╠═╡ =#
 
+# ╔═╡ 24d1b9e1-9371-4c4d-b682-9f92eeb7efcd
+H[:, 3]
+
+
+# ╔═╡ d18bd04e-4c59-41b9-be3b-fa8d8e02fff4
+diag(H)
+
+# ╔═╡ 0da05e23-6609-4b2a-97f1-a453d0459894
+XH
+
+
+
+# ╔═╡ e41102fa-bc47-4342-945b-c0ff80e35676
+X
+
+# ╔═╡ d33c90e7-6a12-4630-adfd-e5f2d08877d5
+scatter(Point3f.(eachrow(XH)))
+
+# ╔═╡ 26011893-e374-4ec5-bb6f-731fe3586eca
+let
+f,ax,h =scatter(Point3f.(eachrow(XH)))
+scatter!(Point3f.(eachrow(X_bar)))
+f
+end
+
+# ╔═╡ fe7ae47b-8cdf-4a0e-ae1e-d233705adc98
+let
+f,ax,h =scatter(Point3f.(eachrow(X)))
+scatter!(Point3f.(eachrow(X_bar)))
+f
+end
+
+# ╔═╡ 380cbdc1-cefb-4b95-8e66-642c7d63ea04
+# =====================================
+# Evaluation
+# =====================================
+
+begin
+    # ---------------------------------
+    # 1) column-wise Pearson r, then mean
+    # ---------------------------------
+    function r_score_uniform(X, Y)
+        if ndims(X) == 1
+            X = reshape(X, :, 1)
+        end
+        if ndims(Y) == 1
+            Y = reshape(Y, :, 1)
+        end
+
+        @assert size(X) == size(Y)
+
+        R = zeros(size(X, 2))
+        for j in 1:size(X, 2)
+            if std(X[:, j]) == 0 || std(Y[:, j]) == 0
+                R[j] = 0.0
+            else
+                R[j] = cor(X[:, j], Y[:, j])
+            end
+        end
+        return mean(R)
+    end
+
+    # ---------------------------------
+    # 2) column-wise RMSE
+    # ---------------------------------
+    function rmse_score(X, Y; raw=false)
+        if ndims(X) == 1
+            X = reshape(X, :, 1)
+        end
+        if ndims(Y) == 1
+            Y = reshape(Y, :, 1)
+        end
+
+        @assert size(X) == size(Y)
+
+        R = zeros(size(X, 2))
+        for j in 1:size(X, 2)
+            R[j] = sqrt(mean((X[:, j] .- Y[:, j]) .^ 2))
+        end
+
+        return raw ? R : mean(R)
+    end
+
+    # ---------------------------------
+    # 3) paper-style ΔR
+    # ---------------------------------
+    function deltaR_uniform(X_test, Y_test, H, G)
+        YG = Y_test * G
+        XH = X_test * H
+
+        R_full = r_score_uniform(XH, YG)
+
+        p = size(X_test, 2)
+        ΔR = zeros(p)
+        R_k = zeros(p)
+
+        for i in 1:p
+            K = Matrix(I, p, p)
+            K[i, i] = 0.0
+
+            XKH = X_test * K * H
+            R_k[i] = r_score_uniform(XKH, YG)
+            ΔR[i] = R_full - R_k[i]
+        end
+
+        return ΔR, R_full, R_k
+    end
+end
+
+# ╔═╡ 297c16b4-60dc-4ec8-955a-5469eb0adada
+begin
+	fmt(x) = round.(x, digits=2)
+    YG = Y_test * G
+
+    ΔR, R_full, R_k = deltaR_uniform(X_test, Y_test, H, G)
+
+    rmse_full = rmse_score(XH, YG)
+    rmse_cols = rmse_score(XH, YG; raw=true)
+
+    println("cor(X_all) =")
+    display(fmt(cor(X_all)))
+
+    println("decode_score = ", fmt(decode_score))
+    println("diag(H)      = ", fmt(hdiag))
+    println("H[:,3]       = ", fmt(H[:,3]))
+
+    println("R_full       = ", fmt(R_full))
+    println("R_k          = ", fmt(R_k))
+    println("ΔR           = ", fmt(ΔR))
+
+    println("RMSE_full    = ", fmt(rmse_full))
+    println("RMSE_cols    = ", fmt(rmse_cols))
+end
+
+# ╔═╡ dafbcaa6-4ec4-46bc-b6f7-769a83396c77
+# ╠═╡ disabled = true
+#=╠═╡
+# 3) observations Y = X*F + noise
+begin
+	Y = X * F' + rand(MersenneTwister(1),length(f₁),length(x₁))'
+	Y_test = X * F' + rand(MersenneTwister(2),length(f₁),length(x₁))'
+end
+  ╠═╡ =#
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -401,6 +519,7 @@ UnfoldDecode = "ec0f67a1-ae9f-4687-b20b-bd39d33e72da"
 WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
 
 [compat]
+CairoMakie = "~0.13.10"
 DataFrames = "~1.8.1"
 UnfoldDecode = "~0.1.1"
 WGLMakie = "~0.11.10"
@@ -412,7 +531,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.12.3"
 manifest_format = "2.0"
-project_hash = "c0289cbcb7938285a814a5ea082c0f04456739f1"
+project_hash = "758b2c9c4946a7d50a4b7343161401f30821c298"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -681,6 +800,18 @@ deps = ["Artifacts", "CUDA_Driver_jll", "JLLWrappers", "LazyArtifacts", "Libdl",
 git-tree-sha1 = "aa15017227b7cc388431875270c26cefe99afec4"
 uuid = "76a88914-d11a-5bdc-97e0-2f5a05c973a2"
 version = "0.20.1+0"
+
+[[deps.Cairo]]
+deps = ["Cairo_jll", "Colors", "Glib_jll", "Graphics", "Libdl", "Pango_jll"]
+git-tree-sha1 = "71aa551c5c33f1a4415867fe06b7844faadb0ae9"
+uuid = "159f3aea-2a34-519c-b102-8c37f9878175"
+version = "1.1.1"
+
+[[deps.CairoMakie]]
+deps = ["CRC32c", "Cairo", "Cairo_jll", "Colors", "FileIO", "FreeType", "GeometryBasics", "LinearAlgebra", "Makie", "PrecompileTools"]
+git-tree-sha1 = "9bd45574379e50579a78774334f4a1f1238c0af5"
+uuid = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+version = "0.13.10"
 
 [[deps.Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
@@ -1282,6 +1413,12 @@ deps = ["Artifacts", "GettextRuntime_jll", "JLLWrappers", "Libdl", "Libffi_jll",
 git-tree-sha1 = "6b4d2dc81736fe3980ff0e8879a9fc7c33c44ddf"
 uuid = "7746bdde-850d-59dc-9ae8-88ece973131d"
 version = "2.86.2+0"
+
+[[deps.Graphics]]
+deps = ["Colors", "LinearAlgebra", "NaNMath"]
+git-tree-sha1 = "a641238db938fff9b2f60d08ed9030387daf428c"
+uuid = "a2bd30eb-e257-5431-a919-1863eab51364"
+version = "1.1.3"
 
 [[deps.Graphite2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2130,6 +2267,12 @@ deps = ["OffsetArrays"]
 git-tree-sha1 = "0fac6313486baae819364c52b4f483450a9d793f"
 uuid = "5432bcbf-9aad-5242-b902-cca2824c8663"
 version = "0.5.12"
+
+[[deps.Pango_jll]]
+deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "7126b66b721a605a2fec966a2874c5ed53258eb3"
+uuid = "36c8627f-9965-5494-a995-c6b170f724f3"
+version = "1.58.0+0"
 
 [[deps.Parameters]]
 deps = ["OrderedCollections", "UnPack"]
@@ -3013,6 +3156,7 @@ version = "4.1.0+0"
 # ╠═0defb5a4-70f8-43e1-a090-a14906731c8c
 # ╠═be4c9d6a-9acf-46aa-8917-219d8d15b517
 # ╠═7def2480-d73b-412b-84c6-30809fc48b01
+# ╠═7c73db32-637a-4c7f-8267-af74ca6f0cb8
 # ╠═24d1b9e1-9371-4c4d-b682-9f92eeb7efcd
 # ╠═d18bd04e-4c59-41b9-be3b-fa8d8e02fff4
 # ╠═0da05e23-6609-4b2a-97f1-a453d0459894
