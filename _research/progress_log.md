@@ -125,7 +125,7 @@ gradually building up:
 
 ## 08 Sep 2026 - ROAMM preprocessing
 
-### Progess
+### Progress
 
 #### ROAMM preprocessing
 - Build a ROAMM preprocessing pipeline using Python in a separate repo: [Natural-Reading-Lexical-Features](https://github.com/xuyg16/Natural-Reading-Lexical-Features)
@@ -154,7 +154,7 @@ gradually building up:
 
 ## 15 Sep 2026 - ROAMM real-data pipeline
 
-### Progegress
+### Progress
 - Added a sampling-rate check in the simulation; increasing the sampling rate does not remove the spike.
 - Prepared the full ROAMM dataset for the real-data B2B analysis.
   - Converted all synced EEG runs to `.npy` format.
@@ -177,7 +177,69 @@ gradually building up:
 - check saccade amplitude when page changes.
 
 
+## 22 Sep 2026 - ROAMM sanity check & additional correlated predictors simulation
 
+### Progess
+- Ran sanity check on EEG data
+  - all-channel FRP butterfly plot
+  - raw FRP vs. deconvolved FRP
+  - FRPs at posterior electrodes O1, O2, Oz, POz
+- Applied b2b on one subject:
+  - compared 1 run vs. 5 runs
+  - using 5 runs reduced noise
+- Add an additional simulation with 3 correlated continuous predictors:
+  - p100, n170, p300
+  - no bised overlap
+  - plain b2b and two-step b2b show the unexplainable peaks
+
+### Meeting note
+- run sanity check scripts on all EEG data, to see if there is any unsual and suspicious data
+- Raw FRP from a singe run looked better than deconvolved FRPs (this is not the central to the current RQ, no need to investigate further)
+- why the unexpected peaks? change UnfoldSim default shape to Hanning window
+- set predictor-biased overlap.
+
+
+## 29 Sep 2026 - Midterm talk 
+
+### Progress
+- Updated the 3 correlated continuous predictors simulation, with hanning window and continuous-1 biased overlap
+- Gave the midterm talk
+
+### Feeback / questions to investigate
+
+
+#### Simulation
+- Show the simulation ground truth more explicitly:
+  - visualize the correlation between condition and the continuous predictor
+  - show how the predictors are correlated with each other
+
+- One-step B2B does not separate the three correlated predictors as cleanly as
+  plain B2B or two-step B2B.
+  - Hypothesis: this may be related to strong regularization.
+  - With the much longer continuous/FIR design matrix, regularization may shrink
+    the signal strongly, leaving little decodable information.
+  - Need to verify this rather than assuming it is the mechanism.
+
+- Understand the effect of `ShiftOnsetByOne` more precisely:
+  - why claim the first bump is from the overlap and second bump is the overlap from next fixation?
+  - Why do the overlap-related bumps appear where they do?
+  - Which neighboring event contributes to each bump?
+  - How does shifting the onset-distance assignment change these bumps?
+  - Verify this from the UnfoldSim implementation rather than inferring it only
+    from the decoding curves.
+
+#### ROAMM predictors
+- Surprisal:
+  - Why use GPT-2 rather than a newer language model?
+  - Why compute surprisal using sentence-level context?
+  - Be able to justify the model and context-window choice.
+
+#### Methods / code
+- Understand the feature-importance implementation:
+  - trace through the code
+  - understand exactly what quantity is being estimated and how it should be interpreted
+
+## 06 Oct 2026 
 
 
 ## Current status
@@ -192,7 +254,9 @@ gradually building up:
 - [x] Plotting all five pipelines
 - [x] Saving pipeline results and figures
 - [x] ROAMM text → lexical predictors → fixation onset → EEG latency preprocessing pipeline
-- [x]  Sampling-rate control: increasing the sampling rate does not remove the spike in the default P300 simulation
+- [x] Sampling-rate control: increasing the sampling rate does not remove the spike in the default P300 simulation
+- [x] Additional simulation of 3 correlated continuous prdictors with Hanning window and continuous-1 biased overlap
+- [x] EEG sanity checks 
 
 
 ### In progress
@@ -206,6 +270,18 @@ gradually building up:
 - [ ] Real Covariate Design 
 - [ ] Held-out evaluation
 - [ ] quality of data sanity check
+- [ ] Run EEG sanity checks across all subjects and flag unusual/suspicious data
+- [ ] ❗ Understand `ShiftOnsetByOne` 
+- [ ] ❗ Understand why one-step B2B separates correlated predictors less cleanly
+
+#### Methodological understanding
+- [ ] Understand the feature-importance implementation and interpretation
+- [ ] Justify GPT-2 surprisal:
+  - why GPT-2?
+  - why sentence-level / preceding context?
+  - how subword-token surprisals are combined at the word level
+- [ ] Held-out evaluation / decide whether it is needed for the final analysis
+
 ### Next
 
  **🚩 Main priority: pipelines debugging, especially B2B, check the results numerically rather than relying on visual inspection**
