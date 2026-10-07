@@ -241,61 +241,127 @@ gradually building up:
 
 ## 06 Oct 2026 
 
+## Progress
+- Checked the original data, the code used a more sufficient way to define a ridge function, and also applied SVD decompose matrix.
+- Due to the time limit, consider just evaluate S as main analysis, delta R as complementary analysis.
+- Limitation found: a fixation contaion multiple information of multiple words.
+
+- Why use GPT2:
+  - The goal is not to maximize next-word prediction accuracy, but to model human language processing. Previous work has shown that larger and better-performing language models do not necessarily provide a better fit to human reading behaviour, and GPT-2 has been shown to provide a good predictor of human reading performance. It is also autoregressive, so its surprisal is based only on preceding context, which is appropriate for incremental reading.
+  - Recalculate the word surprisal, because calculating surprisal naively and subtle tokenization issues can distort the results.
+
+### Meeting notes
+- run the model first, and then decide whether evaluate delta R or not. statistical test not decided yet.
+
+
+
+
+
 
 ## Current status
 
-### Working
+### ✅ Implemented
+
+#### Simulation / pipelines
 - [x] Simulation: `clean` / `overlap` / `confound` / `both`
 - [x] Standard ridge decoding
 - [x] rERP decoding
 - [x] Plain B2B
-- [x] One-step FIR+B2B
+- [x] One-step FIR + B2B
 - [x] Two-step rERP → reconstructed single trials → B2B
-- [x] Plotting all five pipelines
-- [x] Saving pipeline results and figures
-- [x] ROAMM text → lexical predictors → fixation onset → EEG latency preprocessing pipeline
-- [x] Sampling-rate control: increasing the sampling rate does not remove the spike in the default P300 simulation
-- [x] Additional simulation of 3 correlated continuous prdictors with Hanning window and continuous-1 biased overlap
-- [x] EEG sanity checks 
+- [x] Plotting and saving results for all five pipelines
+- [x] Sampling-rate control for the default P300 spike
+- [x] Three-correlated-predictor simulation:
+  - Hanning-window components
+  - continuous-1-biased overlap
+
+#### ROAMM
+- [x] Text → lexical predictors → fixation onset → EEG latency preprocessing
+- [x] Initial EEG sanity checks
+- [x] ROAMM data successfully used as input to two-step B2B
+- [x] Initial subject-level B2B analysis
+
+#### Methodological decisions / understanding
+- [x] GPT-2 choice justified:
+  - goal is modelling human language processing rather than maximizing
+    next-token prediction accuracy
+  - autoregressive prediction is appropriate for incremental reading
+- [x] Identified potential problems with naive word-level surprisal calculation
+  due to GPT-2 subword tokenization
 
 
-### In progress
-- [ ] ❗ Why hanning-window shows up as much better decodable? Should we go deeper in this? 
-- [ ] Numerically validate the B2B results
-- [ ] Compare target recovery and cross-talk across pipelines
-- [ ] Investigate unusual B2B peaks / shapes
-- [ ] Run additional control simulations
-- [ ] Test ROAMM as real-data input for B2B
-- [ ] Develop and validate the ROAMM real-data B2B analysis
-- [ ] Real Covariate Design 
-- [ ] Held-out evaluation
-- [ ] quality of data sanity check
-- [ ] Run EEG sanity checks across all subjects and flag unusual/suspicious data
-- [ ] ❗ Understand `ShiftOnsetByOne` 
-- [ ] ❗ Understand why one-step B2B separates correlated predictors less cleanly
 
-#### Methodological understanding
-- [ ] Understand the feature-importance implementation and interpretation
-- [ ] Justify GPT-2 surprisal:
-  - why GPT-2?
-  - why sentence-level / preceding context?
-  - how subword-token surprisals are combined at the word level
-- [ ] Held-out evaluation / decide whether it is needed for the final analysis
+## Current status
+### 🔍 Open questions
 
-### Next
+#### Simulation / B2B
+- [ ] Why does the Hanning-window simulation appear more decodable?
+  - Is this important enough to investigate further?
 
- **🚩 Main priority: pipelines debugging, especially B2B, check the results numerically rather than relying on visual inspection**
-   
-   **❗Main open question:**  
-   - The B2B estimate and the true ERP waveform have different properties and do not necessarily have the same shape. What is the right way to numerically debug the results?
-   - For ROAMM fixation events, should the analysis use left eye, right eye, or binocular events?
-   - Should surprisal use sentence-level or longer context, for example, page-level context.
-- EEG scaling still needs to be clarified:
-  - Original BIDS metadata reports EEG units as `µV`.
-  - The synced `.pkl` and exported `.npy` values are around `1e-5`.
-  - The `.npy` export preserves the values from the synced `.pkl`, so any scaling change must have occurred upstream.
-- Real Covariate Design — adding a simulation with three correlated predictors before moving to the ROAMM analysis.
-- Held-out evaluation — comparing Plain B2B vs. Two-step B2B on ROAMM using held-out performance.
+- [ ] Understand `ShiftOnsetByOne`
+  - Why do the overlap-related bumps appear where they do?
+  - Which neighboring event contributes to each bump?
+  - How does shifting the onset-distance assignment move/change the bumps?
+
+- [ ] Why does one-step B2B separate the three correlated predictors less
+      cleanly than plain/two-step B2B?
+  - Current hypothesis: strong regularization in the continuous FIR model
+  - Needs verification
+
+- [ ] How should B2B recovery be numerically evaluated?
+  - B2B estimates and the simulated ERP waveform do not necessarily have
+    the same shape
+  - quantify target recovery and cross-talk across pipelines
+
+#### ROAMM
+- [ ] What is the appropriate context for surprisal?
+  - sentence-level
+  - story-level / longer preceding context
+
+- [ ] How should GPT-2 subword probabilities be converted into word
+      probabilities?
+  - account for tokenization / whitespace issues
+
+- [ ] Should fixation events use left-eye, right-eye, or binocular events?
+
+- [ ] EEG scaling:
+  - BIDS metadata reports `µV`
+  - synced `.pkl` / exported `.npy` values are around `1e-5`
+  - determine where scaling occurred upstream
+
+- [ ] Run EEG quality/sanity checks across all subjects and flag suspicious data
+
+#### Evaluation / statistics
+- [ ] Decide whether ΔR is needed as a complementary analysis to S
+- [ ] Decide on statistical testing for subject-level/group-level S estimates
+- [ ] Decide whether held-out evaluation is necessary
+- [ ] If used, compare plain B2B vs. two-step B2B on held-out ROAMM data
+
+#### Methods / code understanding
+- [ ] Understand the feature-importance implementation
+  - trace through the code
+  - understand exactly what quantity is estimated, SVD
+  - determine how it should be interpreted
+
+
+### 🚩 Immediate priorities
+
+1. **Recalculate word surprisal**
+   - decide context definition
+   - implement tokenization-aware word probability
+
+2. **Run two-step B2B on ROAMM**
+   - word length
+   - word frequency
+   - word surprisal
+
+3. **Obtain and inspect subject-level S estimates**
+
+4. **Run EEG sanity checks across subjects**
+
+5. **Then decide on evaluation/statistics**
+   - ΔR?
+   - statistical test?
 
 
 
@@ -319,37 +385,59 @@ gradually building up:
 
 > **Current structure:**
 >```
-> ├── notebooks/                         # interactive debugging notebooks with sliders for different configurations
+> ├── notebooks/                                     # interactive debugging notebooks with sliders for different configurations
+> │   ├── roamm                                      # debugging for ROAMM real data
+> │   │   ├── roamm_sanity_check.jl
+> │   │   ├── debug_roamm_two_step.jl
+> │   │   ├── roamm.jl
 > │   ├── 00_debug_simulation.jl 
 > │   ├── 01_debug_standard_decoding.jl
 > │   ├── 02_debug_rerp_decoding.jl
 > │   ├── 03_debug_plain_b2b.jl           
 > │   ├── 04_debug_one_step_b2b.jl
 > │   ├── 05_debug_two_step_b2b.jl
-> │   ├── 06_compare_pipelines.jl        # overview of all five pipelines; no sliders
-> │   └── simulation_controls.jl         # shared PlutoUI sliders / simulation controls
+> │   ├── 06_compare_pipelines.jl                    # overview of all five pipelines; no sliders
+> │   ├── 07_correlated_continuous_sim_pipelines.jl
+> │   └── simulation_controls.jl                     # shared PlutoUI sliders / simulation controls
 >
-> ├── scripts/                           # scripts for running and saving the five pipelines in folder `results/`
-> │   ├── 01_run_standard_decoding.jl
-> │   ├── 02_run_rerp_decoding.jl
-> │   ├── 03_run_plain_b2b.jl
-> │   ├── 04_run_one_step_b2b.jl
-> │   └── 05_run_two_step_b2b.jl
+> ├── plots/                                         # date based plots dirs
+> ├── results/
+> │   ├── condition_continuous_Sim/
+> │   ├── correlated_continuous_Sim/
+> │   ├── roamm/
+>
+> ├── ROAMM_preprocessing/
+> │   ├── logs/
+> │   ├── notebooks/
+> │   │   ├── 00_inspect_roamm.ipynb
+> │   │   ├── 01_check_roamm_preprocessing.ipynb
+> │   ├── scripts/
+> │   │   ├── 01_prepare_text.py
+> │   │   ├── 02_compute_length_frequency.py
+> │   │   ├── 03_compute_surprisal.py
+> │   │   ├── 04_prepare_fixation_events.py
+> │   │   ├── 05_merge_lexical_features.py
+> │   │   ├── 06_export_all_eeg.py
+>
+>  
+> ├── scripts/                                       # scripts for running and saving the five pipelines in folder `results/`
 >
 > ├── src/
-> │   ├── pipelines                      # implementations of the five pipelines
+> │   ├── pipelines                                 # implementations of the five pipelines
 > │   │   ├── 01_standard_decoding.jl
 > │   │   ├── 02_rerp_decoding.jl
 > │   │   ├── 03_plain_b2b.jl
 > │   │   ├── 04_one_step_b2b.jl
 > │   │   └── 05_two_step_b2b.jl
-> │   ├── plotting                       # plotting functions
+> │   ├── plotting                                 # plotting functions
 > │   │   ├── plot_b2b.jl
 > │   │   └── plot_decoding.jl
-> │   ├── MScB2B.jl                      # main module of the custom MScB2B package
-> │   ├── Pipelines.jl                   # loads/organise the pipeline implementations
-> │   ├── plotting.jl                    # loads plotting function
-> │   └── simulation.jl                  # simulation setup and data generation
+> │   ├── roamm
+> │   │   ├── two_step_b2b_roamm.jl
+> │   ├── simulations                               # simulation setup and data generation for Cond_cont & 3 correlated continuous
+> │   │   ├── ConditionContinuousSim.jl
+> │   │   ├── CorrelatedContinuousSim.jl  
+> │   ├── MScB2B.jl                                # main module of the custom MScB2B package
 >```
 
 
