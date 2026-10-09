@@ -21,6 +21,7 @@ dependencies = [
     { name = "torch" },
     { name = "transformers" },
     { name = "wordfreq" },
+    { name = "wordsprobability" },
 ]
 
 [package.metadata]
@@ -31,6 +32,7 @@ requires-dist = [
     { name = "torch", specifier = ">=2.14.0" },
     { name = "transformers", specifier = ">=5.17.0" },
     { name = "wordfreq", specifier = ">=3.1.1" },
+    { name = "wordsprobability", specifier = ">=0.17" },
 ]
 
 [[package]]
@@ -2513,4 +2515,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/4c/cd/9581ff0ea2c581012d0caae4bba024f3ff6b46e030a55ddec1ce545e2caf/wordfreq-3.1.1.tar.gz", hash = "sha256:7943098975f25c2a70e1151ee5a62083b14a5f86f6cc5703cc9526f716ceb408", size = 56846562, upload-time = "2023-11-21T23:09:12.106Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/24/61/62835c475d69872d30689f284497853fe33fe1d6dd18f57346d13305861d/wordfreq-3.1.1-py3-none-any.whl", hash = "sha256:4b1c6ecffc6198be3396d5cf871c4423ca71c907c231348d352dd54d62b97473", size = 56834549, upload-time = "2023-11-21T23:09:07.183Z" },
+]
+
+[[package]]
+name = "wordsprobability"
+version = "0.17"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pandas" },
+    { name = "torch" },
+    { name = "transformers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/72/62/2a99ec06452435a991282fe83d551035111c8a13d2b9400fd494f146da55/wordsprobability-0.17.tar.gz", hash = "sha256:9554a8d84e98c414acd44465b699ccd91bf6f3e20de7ef074a35232b3fffa9e9", size = 7954, upload-time = "2024-07-10T13:28:31.22Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/5f/43a3c191154aa19ec08acfe53db14ff4c866c0f9774091cea97376ce6fb4/wordsprobability-0.17-py3-none-any.whl", hash = "sha256:7a4bc6ad27160bc5795d1e17aa379c26d0760691101a2517f4eb5b4cb46f928b", size = 8150, upload-time = "2024-07-10T13:28:29.707Z" },
 ]
