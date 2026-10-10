@@ -34,3 +34,4 @@ __pycache__/
 
 ROAMM_preprocessing/outputs/
 OG/
+logs/

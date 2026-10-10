@@ -1,32 +1,0 @@
-Precompiling packages...
-  21117.5 ms  ✓ MScB2B
-  1 dependency successfully precompiled in 24 seconds. 611 already precompiled.
-==============================
-Correlated continuous one-step B2B
-==============================
-Config:
-CorrelatedContinuousConfig(1500, 100.0, 0.8, 20, 0.3, 0.3, 0.15, 0.15, 0.45, 0.75, 5.0, 2.0, 250.0, -0.6, true)
-
-Simulating data...
-Simulation finished.
-
-Running one-step B2B...
-Starting one-step B2B: no_overlap
-Progress:  67%|███████████████████████████▍             |  ETA: 6:17:59[K
-   cross_val_rep: 2[K[A
-[K[AProgress: 100%|█████████████████████████████████████████| Time: 18:59:25[K
-   cross_val_rep: 3[K
-Finished one-step B2B: no_overlap
-Starting one-step B2B: overlap
-Progress:  67%|███████████████████████████▍             |  ETA: 4:20:26[K
-   cross_val_rep: 2[K[A
-[K[AProgress: 100%|█████████████████████████████████████████| Time: 13:01:39[K
-   cross_val_rep: 3[K
-Finished one-step B2B: overlap
-One-step B2B finished.
-
-Saved to:
-results/final/simulation_correlated_continuous/one_step_b2b_1500trials_100hz.jls
-==============================
-Done
-==============================

@@ -1,188 +1,0 @@
-Precompiling packages...
-  19162.7 ms  ✓ MScB2B
-  1 dependency successfully precompiled in 23 seconds. 612 already precompiled.
-===============================
-03 - plain B2B
-===============================
-Active project: /store/users/xu/2025_MSc_b2b/Project.toml
-Threads: 128
-Started: 2026-08-22T23:50:12.761
-
-Configuration:
-  n_trials           = 1000
-  noiselevel         = 0.3
-  channel_noise_sd   = 0.3
-  rho                = 0.8
-  cross val reps       = 3
-  seed               = 12
-
-Simulating cases...
-Done simulating cases.
-
-Running plain B2B...
-Progress:   1%|▎                                        |  ETA: 2:15:25[K
-            time: 57[K
-   cross_val_rep: 1[K[A[A
-
-[K[A[K[AProgress:  34%|█████████████▊                           |  ETA: 0:01:37[K
-            time: 71[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  34%|█████████████▉                           |  ETA: 0:01:43[K
-            time: 57[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  34%|██████████████                           |  ETA: 0:01:42[K
-            time: 107[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  40%|████████████████▍                        |  ETA: 0:01:20[K
-            time: 89[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  47%|███████████████████▎                     |  ETA: 0:01:01[K
-            time: 61[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  53%|█████████████████████▋                   |  ETA: 0:00:48[K
-            time: 12[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  58%|███████████████████████▋                 |  ETA: 0:00:39[K
-            time: 76[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  64%|██████████████████████████▎              |  ETA: 0:00:30[K
-            time: 6[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  68%|███████████████████████████▉             |  ETA: 0:00:26[K
-            time: 96[K
-   cross_val_rep: 3[K[A[A
-
-[K[A[K[AProgress:  82%|█████████████████████████████████▋       |  ETA: 0:00:12[K
-            time: 25[K
-   cross_val_rep: 3[K[A[A
-
-[K[A[K[AProgress: 100%|█████████████████████████████████████████| Time: 0:00:56[K
-            time: 65[K
-   cross_val_rep: 3[K
-Progress:   1%|▎                                        |  ETA: 0:07:51[K
-            time: 102[K
-   cross_val_rep: 1[K[A[A
-
-[K[A[K[AProgress:   4%|█▊                                       |  ETA: 0:01:07[K
-            time: 67[K
-   cross_val_rep: 1[K[A[A
-
-[K[A[K[AProgress:  37%|███████████████▎                         |  ETA: 0:00:11[K
-            time: 55[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  46%|███████████████████                      |  ETA: 0:00:08[K
-            time: 76[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  74%|██████████████████████████████▎          |  ETA: 0:00:03[K
-            time: 107[K
-   cross_val_rep: 3[K[A[A
-
-[K[A[K[AProgress: 100%|█████████████████████████████████████████| Time: 0:00:09[K
-            time: 70[K
-   cross_val_rep: 3[K
-Progress:   1%|▎                                        |  ETA: 0:06:10[K
-            time: 106[K
-   cross_val_rep: 1[K[A[A
-
-[K[A[K[AProgress:   4%|█▌                                       |  ETA: 0:01:03[K
-            time: 7[K
-   cross_val_rep: 1[K[A[A
-
-[K[A[K[AProgress:  18%|███████▍                                 |  ETA: 0:00:12[K
-            time: 101[K
-   cross_val_rep: 1[K[A[A
-
-[K[A[K[AProgress:  22%|████████▉                                |  ETA: 0:00:10[K
-            time: 59[K
-   cross_val_rep: 1[K[A[A
-
-[K[A[K[AProgress:  28%|███████████▍                             |  ETA: 0:00:08[K
-            time: 62[K
-   cross_val_rep: 1[K[A[A
-
-[K[A[K[AProgress:  34%|█████████████▊                           |  ETA: 0:00:10[K
-            time: 67[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  44%|██████████████████                       |  ETA: 0:00:07[K
-            time: 65[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  53%|█████████████████████▉                   |  ETA: 0:00:05[K
-            time: 64[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  57%|███████████████████████▍                 |  ETA: 0:00:04[K
-            time: 76[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  62%|█████████████████████████▎               |  ETA: 0:00:04[K
-            time: 45[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  64%|██████████████████████████▎              |  ETA: 0:00:03[K
-            time: 94[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  65%|██████████████████████████▊              |  ETA: 0:00:03[K
-            time: 63[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  67%|███████████████████████████▍             |  ETA: 0:00:03[K
-            time: 35[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  68%|███████████████████████████▊             |  ETA: 0:00:04[K
-            time: 7[K
-   cross_val_rep: 3[K[A[A
-
-[K[A[K[AProgress:  73%|█████████████████████████████▉           |  ETA: 0:00:03[K
-            time: 102[K
-   cross_val_rep: 3[K[A[A
-
-[K[A[K[AProgress: 100%|█████████████████████████████████████████| Time: 0:00:07[K
-            time: 107[K
-   cross_val_rep: 3[K
-Progress:   1%|▎                                        |  ETA: 0:06:22[K
-            time: 33[K
-   cross_val_rep: 1[K[A[A
-
-[K[A[K[AProgress:  11%|████▍                                    |  ETA: 0:00:20[K
-            time: 92[K
-   cross_val_rep: 1[K[A[A
-
-[K[A[K[AProgress:  34%|█████████████▊                           |  ETA: 0:00:09[K
-            time: 32[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  36%|██████████████▊                          |  ETA: 0:00:08[K
-            time: 7[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  48%|███████████████████▊                     |  ETA: 0:00:05[K
-            time: 64[K
-   cross_val_rep: 2[K[A[A
-
-[K[A[K[AProgress:  74%|██████████████████████████████▍          |  ETA: 0:00:03[K
-            time: 33[K
-   cross_val_rep: 3[K[A[A
-
-[K[A[K[AProgress: 100%|█████████████████████████████████████████| Time: 0:00:07[K
-            time: 90[K
-   cross_val_rep: 3[K
-
-Saved to:
-/store/users/xu/2025_MSc_b2b/results/03_plain_b2b_results.jls
-
-Total time: 1.58 min
-Finished: 2026-08-22T23:51:58.137
