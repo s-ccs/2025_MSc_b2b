@@ -10,9 +10,9 @@ LOG_DIR = PROJECT_ROOT / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_PATH = LOG_DIR / f"{Path(__file__).stem}.log"
 
-EVENTS_PATH = PROJECT_ROOT / "outputs" / "roamm_fixation_events.csv"
-LEXICAL_PATH = PROJECT_ROOT / "outputs" / "roamm_words_with_surprisal.csv"
-OUTPUT_PATH = PROJECT_ROOT / "outputs" / "roamm_b2b_events.csv"
+EVENTS_PATH = PROJECT_ROOT / "outputs" / "04_roamm_fixation_events.csv"
+LEXICAL_PATH = PROJECT_ROOT / "outputs" / "03_roamm_words_with_surprisal.csv"
+OUTPUT_PATH = PROJECT_ROOT / "outputs" / "05_roamm_b2b_events.csv"
 
 logging.basicConfig(
     level = logging.INFO,

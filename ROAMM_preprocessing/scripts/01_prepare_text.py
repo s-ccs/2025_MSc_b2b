@@ -9,7 +9,7 @@ import logging
 DATA_DIR = Path("/scratch/data/ROAMM/derivatives/stimuli/wiki_stories")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_PATH = PROJECT_ROOT / "outputs" / "roamm_words.csv"
+OUTPUT_PATH = PROJECT_ROOT / "outputs" / "01_roamm_words.csv"
 
 
 LOG_DIR = PROJECT_ROOT / "logs"

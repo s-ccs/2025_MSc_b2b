@@ -6,8 +6,8 @@ from wordsprobability import get_surprisal_per_word
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-INPUT_PATH = PROJECT_ROOT / "outputs" / "roamm_words_with_length_and_frequency.csv"
-OUTPUT_PATH = PROJECT_ROOT / "outputs" / "roamm_words_with_surprisal.csv"
+INPUT_PATH = PROJECT_ROOT / "outputs" / "02_roamm_words_with_length_and_frequency.csv"
+OUTPUT_PATH = PROJECT_ROOT / "outputs" / "03_roamm_words_with_surprisal.csv"
 
 MODEL_NAME = "gpt2-small"
 
@@ -46,7 +46,7 @@ for story_name, story_df in words.groupby("story_name", sort=False):
     result = get_surprisal_per_word(text=story_text, model_name=MODEL_NAME)
 
     # Check word alignment
-    model_words = result["words"].tolist()
+    model_words = result["word"].tolist()
 
     if story_words != model_words:
         mismatches = [
@@ -61,7 +61,7 @@ for story_name, story_df in words.groupby("story_name", sort=False):
         )
 
     # Assign surprisal to the corresponding word occurrences
-    wors.loc[story_df.index, "word_surprisal"] = result["surprisal"].to_numpy()
+    words.loc[story_df.index, "word_surprisal"] = result["surprisal"].astype("float64").to_numpy()
     logger.info("Finished %s: %d words aligned", story_name, len(story_words))
 
 # check and save

@@ -7,8 +7,8 @@ from wordfreq import zipf_frequency
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-INPUT_PATH = PROJECT_ROOT / "outputs" / "roamm_words.csv"
-OUTPUT_PATH = PROJECT_ROOT / "outputs" / "roamm_words_with_length_and_frequency.csv"
+INPUT_PATH = PROJECT_ROOT / "outputs" / "01_roamm_words.csv"
+OUTPUT_PATH = PROJECT_ROOT / "outputs" / "02_roamm_words_with_length_and_frequency.csv"
 
 
 LOG_DIR = PROJECT_ROOT / "logs"

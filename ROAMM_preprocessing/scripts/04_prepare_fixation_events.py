@@ -7,7 +7,7 @@ import pandas as pd
 SYNCED_DIR = Path("/scratch/data/ROAMM/derivatives/synced")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_PATH = PROJECT_ROOT / "outputs" / "roamm_fixation_events.csv"
+OUTPUT_PATH = PROJECT_ROOT / "outputs" / "04_roamm_fixation_events.csv"
 
 LOG_DIR = PROJECT_ROOT / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
