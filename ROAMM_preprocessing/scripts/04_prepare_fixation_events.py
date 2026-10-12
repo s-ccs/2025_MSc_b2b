@@ -76,7 +76,7 @@ for file in files:
         }
     )
 
-    # Map fixation onsets to EEF sample
+    # Map fixation onsets to EEG sample
     time = df["time"].to_numpy()
     sample_idx = nearest_sample_indices(time, events["onset_s"].to_numpy())
 
