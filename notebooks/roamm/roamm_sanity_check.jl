@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ f52ff27a-b5d3-11f1-9927-553946ff73b0
 begin
     import Pkg
-    Pkg.activate(joinpath(@__DIR__, ".."))
+    Pkg.activate(joinpath(@__DIR__, "..", ".."))
 end
 
 # ╔═╡ c1cd1ec3-6ce3-4b28-aeac-5e467926680e
@@ -55,7 +55,7 @@ end
 # ╔═╡ 05303ca7-8c71-4474-bd74-96c9266f5ae5
 begin
 	eeg_file = joinpath(DATA_DIR, "$(SUBJECT)_run$(RUN)_eeg.npy")
-	events_file = joinpath(PREPROC_DIR, "roamm_b2b_events.csv")
+	events_file = joinpath(PREPROC_DIR, "05_roamm_b2b_events.csv")
 	all_events = CSV.read(events_file, DataFrame)
 	dat = NPZ.npzread(eeg_file)
 	evts = all_events[
@@ -345,34 +345,49 @@ end
   ╠═╡ =#
 
 # ╔═╡ c1950600-59f5-476f-9877-8395a17d7e3c
+# ╠═╡ disabled = true
 #=╠═╡
 one_subject_one_run_roamm = plot_erp(result_length)
   ╠═╡ =#
 
 # ╔═╡ 32ea42a5-7f7c-4328-a630-5b4ffc2b5fc2
+# ╠═╡ disabled = true
 #=╠═╡
 save("one_subject_one_run_roamm.svg", one_subject_one_run_roamm)
   ╠═╡ =#
 
 # ╔═╡ 5c7984af-fb9b-42d0-88a9-33241af6c123
-# ╠═╡ disabled = true
-#=╠═╡
 predictors = [
 		:word_length,
 		:frequency_zipf,
 		:word_surprisal
 	]
-  ╠═╡ =#
 
 # ╔═╡ ac6f6215-f719-4b8a-89a5-3dba3756525a
-# ╠═╡ disabled = true
-#=╠═╡
 fit_all = MScB2B.fit_two_step_b2b_roamm(
 	dat_uv,
 	evts;
 	predictors
 )
-  ╠═╡ =#
+
+# ╔═╡ 117bda62-2653-4ee3-a920-5f87e809cd47
+begin
+	b2b_results = filter(
+	    :coefname => !=("(Intercept)"),
+	    b2b_results
+	)
+	
+
+
+	plot_erp(b2b_results)
+end
+
+# ╔═╡ 5fe4c860-dc3a-4864-8460-b9b3578999e6
+begin
+
+
+plot_erp(coeftable(fit_all.rerp_model))
+end
 
 # ╔═╡ 42180da3-93eb-4d45-94e4-006d1bef3326
 # ╠═╡ disabled = true
@@ -491,6 +506,8 @@ extrema(result_subject.estimate)
 # ╠═32ea42a5-7f7c-4328-a630-5b4ffc2b5fc2
 # ╠═5c7984af-fb9b-42d0-88a9-33241af6c123
 # ╠═ac6f6215-f719-4b8a-89a5-3dba3756525a
+# ╠═117bda62-2653-4ee3-a920-5f87e809cd47
+# ╠═5fe4c860-dc3a-4864-8460-b9b3578999e6
 # ╠═42180da3-93eb-4d45-94e4-006d1bef3326
 # ╠═81f5bd9f-51d6-43d7-aae5-cb923e69d713
 # ╟─d15064ee-9057-4638-843e-f92b72b83ccb

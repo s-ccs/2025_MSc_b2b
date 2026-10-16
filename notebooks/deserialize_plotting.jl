@@ -22,7 +22,47 @@ begin
 	using CairoMakie
 end
 
+# ╔═╡ 86ad597f-ef3c-499c-ba4e-6a3ccd8cc828
+center_predictors = deserialize("/store/users/xu/2025_MSc_b2b/scripts/results/roamm/sub-10177_center.jls")
+
+# ╔═╡ 2e5e47ba-4be7-4d92-b9aa-4be4456bbf26
+begin
+	using UnfoldMakie
+	using Unfold
+	b2b_model = center_predictors.b2b_fit_corrected
+	b2b_table = Unfold.coeftable(b2b_model)
+
+	filter!(
+    :coefname => !=("(Intercept)"),
+    b2b_table
+)
+
+plot_erp(b2b_table)
+						 
+	
+end
+
+# ╔═╡ 617d66a7-68b4-47ce-ad53-49e3e8abc207
+zscore_predictors = deserialize("/store/users/xu/2025_MSc_b2b/scripts/results/roamm/sub-10177_zscore.jls")
+
+# ╔═╡ 4f599a7d-cb5a-41a0-82b7-d79fedfb7d3c
+begin
+	b2b_model_zscore = zscore_predictors.b2b_fit_corrected
+	b2b_table_zscore = Unfold.coeftable(b2b_model_zscore)
+
+	filter!(
+    :coefname => !=("(Intercept)"),
+    b2b_table_zscore
+)
+
+plot_erp(b2b_table_zscore)
+						 
+	
+end
+
 # ╔═╡ 35d251b4-caf8-4f68-ad99-f09d8d6172ed
+# ╠═╡ disabled = true
+#=╠═╡
 result_one_step = deserialize(
         joinpath(
             @__DIR__,
@@ -33,18 +73,25 @@ result_one_step = deserialize(
             "one_step_b2b_1500trials_100hz.jls"
         )
     )
+  ╠═╡ =#
 
 # ╔═╡ 317b2b1f-11dc-49f7-8b85-ff3829ac4cd8
+# ╠═╡ disabled = true
+#=╠═╡
 propertynames(result_one_step)
+  ╠═╡ =#
 
 # ╔═╡ 22e19442-4b57-4400-a047-4188e20bfd04
+#=╠═╡
 begin
     cfg_corr = result_one_step.cfg_corr
     sim_corr = result_one_step.sim_corr
     one_step_corr = result_one_step.one_step_corr
 end
+  ╠═╡ =#
 
 # ╔═╡ 7134dc44-d793-44f3-aee1-dec128ead46b
+#=╠═╡
 begin
 	fig = MScB2B.plot_correlated_b2b(
 	    one_step_corr.score_tables,
@@ -54,6 +101,7 @@ begin
 	
 	fig
 end
+  ╠═╡ =#
 
 # ╔═╡ 065f24d7-a953-4024-9f14-88692dc74e64
 # ╠═╡ disabled = true
@@ -62,7 +110,9 @@ cfg_cond = ConditionContinuousConfig()
   ╠═╡ =#
 
 # ╔═╡ bb6e801d-7023-4a4d-a0a8-1932fc8b8597
+#=╠═╡
 save("04_one_step_b2b_correlatedSim.svg", fig)
+  ╠═╡ =#
 
 # ╔═╡ d9b9b9b8-a493-45b3-902d-35acd919d57e
 #=╠═╡
@@ -305,6 +355,10 @@ end
 # ╠═33175d2a-4fb8-4471-a5a2-61ec2411ba71
 # ╠═d9bdc570-3f31-40df-baf8-676a19ba5960
 # ╠═e19c8aa5-5bb2-40e0-935d-cf90182ba8cd
+# ╠═86ad597f-ef3c-499c-ba4e-6a3ccd8cc828
+# ╠═2e5e47ba-4be7-4d92-b9aa-4be4456bbf26
+# ╠═617d66a7-68b4-47ce-ad53-49e3e8abc207
+# ╠═4f599a7d-cb5a-41a0-82b7-d79fedfb7d3c
 # ╠═35d251b4-caf8-4f68-ad99-f09d8d6172ed
 # ╠═317b2b1f-11dc-49f7-8b85-ff3829ac4cd8
 # ╠═22e19442-4b57-4400-a047-4188e20bfd04

@@ -192,16 +192,6 @@ end
 )
   ╠═╡ =#
 
-# ╔═╡ a03528f8-af5b-4f1e-88d0-8d30cadc76f9
-# ╠═╡ disabled = true
-#=╠═╡
-(
-	typeof(uf_rerp),
-	Unfold.times(uf_rerp)[1],
-	Unfold.basisname(uf_rerp)
-)
-  ╠═╡ =#
-
 # ╔═╡ f954ca62-610b-4c4b-8966-35dcdfe37471
 # ╠═╡ disabled = true
 #=╠═╡
@@ -225,6 +215,16 @@ begin
 	    eventcolumn = :event,
 	)
 end
+  ╠═╡ =#
+
+# ╔═╡ a03528f8-af5b-4f1e-88d0-8d30cadc76f9
+# ╠═╡ disabled = true
+#=╠═╡
+(
+	typeof(uf_rerp),
+	Unfold.times(uf_rerp)[1],
+	Unfold.basisname(uf_rerp)
+)
   ╠═╡ =#
 
 # ╔═╡ 134faf2e-4c93-4531-9edc-19ee0bd19352

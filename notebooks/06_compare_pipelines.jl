@@ -30,32 +30,6 @@ begin
 	results_dir = joinpath(project_root, "results")
 end
 
-# ╔═╡ 0d11f181-fe2f-4796-8981-f9fa9ef1d761
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	standard = deserialize(
-	    joinpath(results_dir, "01_standard_decoding_results.jls")
-	)
-	
-	rerp = deserialize(
-	    joinpath(results_dir, "02_rerp_decoding_results.jls")
-	)
-	
-	plain_b2b = deserialize(
-	    joinpath(results_dir, "03_plain_b2b_results.jls")
-	)
-	
-	one_step_b2b = deserialize(
-	    joinpath(results_dir, "04_one_step_b2b_results.jls")
-	)
-	
-	two_step_b2b = deserialize(
-	    joinpath(results_dir, "05_two_step_b2b_results.jls")
-	)
-end
-  ╠═╡ =#
-
 # ╔═╡ b3f15889-7799-4ab1-b4f5-f9f337a6e876
 # ╠═╡ disabled = true
 #=╠═╡
@@ -150,46 +124,33 @@ fig_plain_b2b_continuous = MScB2B.plot_b2b_grid(
 	)
   ╠═╡ =#
 
-# ╔═╡ f9915e97-59c9-4c15-99e3-8ff6bc77d7b4
-one_step_b2b = deserialize(
-	    joinpath(results_dir, "one_step_b2b_hanning_1500trials_results.jls")
-	)
-
 # ╔═╡ 494ad80a-7133-42f6-be53-a7a43243740a
+#=╠═╡
 # ===================================
 # 04 - one step B2B
 # =====================================
 scores_one_step_b2b = one_step_b2b.score_tables
+  ╠═╡ =#
 
 # ╔═╡ 123ed81f-a95f-4861-ab48-e3a6fb736b06
+#=╠═╡
 fig_one_step_b2b_condition = MScB2B.plot_b2b_grid(
 	scores_one_step_b2b,
 	one_step_b2b.cfg;
 	target = :condition,
 	x_window = (-0.1, 0.6)
 )
+  ╠═╡ =#
 
 # ╔═╡ 95c902cf-19c7-4748-bc9f-9e549c11c98e
+#=╠═╡
 fig_one_step_b2b_continuous = MScB2B.plot_b2b_grid(
 		scores_one_step_b2b,
 		one_step_b2b.cfg;
 		target = :continuous,
 		x_window = (-0.1, 0.6)
 	)
-
-# ╔═╡ 97226b8b-bc89-486e-a9e9-2624c9e9073c
-begin
-	plot_dir = joinpath(@__DIR__, "..", "plots")
-	save(
-        joinpath(plot_dir, "04_one_step_b2b_condition_hanning_1500trials_long_windows.svg"),
-        fig_one_step_b2b_condition
-    )
-
-    save(
-        joinpath(plot_dir, "04_one_step_b2b_continuous_hanning_1500trials_longwindows.svg"),
-        fig_one_step_b2b_continuous
-    )
-end
+  ╠═╡ =#
 
 # ╔═╡ 03a985fd-74ee-4d3c-ba7f-38252e50c0f7
 # ╠═╡ disabled = true
@@ -218,6 +179,55 @@ fig_two_step_b2b_continuous = MScB2B.plot_b2b_grid(
 		two_step_b2b.cfg;
 		target = :continuous
 	)
+  ╠═╡ =#
+
+# ╔═╡ 0d11f181-fe2f-4796-8981-f9fa9ef1d761
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	standard = deserialize(
+	    joinpath(results_dir, "01_standard_decoding_results.jls")
+	)
+	
+	rerp = deserialize(
+	    joinpath(results_dir, "02_rerp_decoding_results.jls")
+	)
+	
+	plain_b2b = deserialize(
+	    joinpath(results_dir, "03_plain_b2b_results.jls")
+	)
+	
+	one_step_b2b = deserialize(
+	    joinpath(results_dir, "04_one_step_b2b_results.jls")
+	)
+	
+	two_step_b2b = deserialize(
+	    joinpath(results_dir, "05_two_step_b2b_results.jls")
+	)
+end
+  ╠═╡ =#
+
+# ╔═╡ f9915e97-59c9-4c15-99e3-8ff6bc77d7b4
+#=╠═╡
+one_step_b2b = deserialize(
+	    joinpath(results_dir, "one_step_b2b_hanning_1500trials_results.jls")
+	)
+  ╠═╡ =#
+
+# ╔═╡ 97226b8b-bc89-486e-a9e9-2624c9e9073c
+#=╠═╡
+begin
+	plot_dir = joinpath(@__DIR__, "..", "plots")
+	save(
+        joinpath(plot_dir, "04_one_step_b2b_condition_hanning_1500trials_long_windows.svg"),
+        fig_one_step_b2b_condition
+    )
+
+    save(
+        joinpath(plot_dir, "04_one_step_b2b_continuous_hanning_1500trials_longwindows.svg"),
+        fig_one_step_b2b_continuous
+    )
+end
   ╠═╡ =#
 
 # ╔═╡ 25ab2016-3821-4783-bbed-5d1deb1af7d5
