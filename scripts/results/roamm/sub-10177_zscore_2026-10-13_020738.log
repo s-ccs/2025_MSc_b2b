@@ -1,0 +1,18 @@
+========================================
+ROAMM Two-step B2B
+========================================
+Subject: sub-10177
+Date: 2026-10-13T02:07:49.294
+Scaling: zscore
+Predictors: [:word_length, :frequency_zipf, :word_surprisal]
+Sampling rate: 256.0 Hz
+Cross-validation repetitions: 3
+Random seed: 42
+
+Loading and concatenating 5 runs...
+EEG shape: (64, 961024)
+Fixations: 8700
+Starting pooled rERP + B2B...
+Saved result: /store/users/xu/2025_MSc_b2b/scripts/roamm/../results/roamm/sub-10177_zscore.jls
+Status: SUCCESS
+Elapsed time: 3953.36 seconds
