@@ -255,6 +255,8 @@ gradually building up:
 
 
 
+## 13 Oct 2026
+1. How to insepect page/fixation boundaries in ROAMM event table
 
 
 

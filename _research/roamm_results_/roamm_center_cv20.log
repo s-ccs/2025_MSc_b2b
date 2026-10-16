@@ -1,0 +1,38 @@
+
+========================================
+ROAMM Two-step B2B
+Started: 2026-10-13T11:26:14.853
+Subjects: 44
+Predictors: [:word_length, :frequency_zipf, :word_surprisal]
+Scaling: center
+Cross-validation repetitions: 20
+Sampling rate: 256.0 Hz
+Random seed: 12
+========================================
+
+[1/44] Processing sub-10014
+EEG shape: (64, 909056)
+Fixations: 6618
+SUCCESS: sub-10014
+Saved: /store/users/xu/2025_MSc_b2b/scripts/roamm/../../results/roamm/sub-10014_center_cv20.jls
+Elapsed time: 6008.43 seconds
+
+[2/44] Processing sub-10052
+EEG shape: (64, 875520)
+Fixations: 7426
+
+========================================
+ROAMM Two-step B2B
+Started: 2026-10-14T11:48:05.824
+Subjects: 44
+Predictors: [:word_length, :frequency_zipf, :word_surprisal]
+Scaling: center
+Cross-validation repetitions: 20
+Sampling rate: 256.0 Hz
+Random seed: 12
+========================================
+[1/44] SKIPPED sub-10014 (already exists)
+
+[2/44] Processing sub-10052
+EEG shape: (64, 875520)
+Fixations: 7426
