@@ -92,107 +92,35 @@ function decode_standard_ridge(
     return scores, yhat
 end
 
-
-function fit_standard_decoding_case(
-    case_data,
-    model;
-    target::Symbol,
-    nfolds::Int,
-    seed::Int
+function fit_standard_decoding_roamm(
+    dat,
+    evts,
+    times;
+    model = make_ridge_tuned_model(),
+    targets = (:word_length, :frequency_zipf, :word_surprisal),
+    nfolds:Int = 5, 
+    seed::Int = 12
 )
-    dat = case_data.epoched
-    evts = case_data.events_epoched
-    times = case_data.times
-
-    return decode_standard_ridge(
-        dat,
-        evts,
-        times,
-        model;
-        target = target,
-        nfolds = nfolds,
-        seed = seed
-    )
-end 
-
-function _run_standard_decoding(
-    simulation,
-    cases;
-    model,
-    targets,
-    nfolds::Int,
-    seed::Int
-)
-
     score_tables = DataFrame[]
-    yhats = Dict{Tuple{Symbol, Symbol}, Matrix{Float64}}()
+    yhats = Dict{Symbol, Matrix{Float64}}()
 
-    for case_name in cases
-        case_data = getproperty(simulation, case_name)
-        dat = case_data.epoched
-        evts = case_data.events_epoched
-        times = case_data.times
-
-        for target in targets
-            scores_case, yhat_case = decode_standard_ridge(
-                dat,
-                evts,
-                times,
-                model;
-                target = target,
-                nfolds = nfolds,
-                seed = seed
-            )
-            scores_case[!, :case] = fill(String(case_name), nrow(scores_case))
-            scores_case[!, :target] = fill(String(target), nrow(scores_case))
-            push!(score_tables, scores_case)
-            yhats[(case_name, target)] = yhat_case
-        end
+    for target in targets
+        scores, yhat = decode_standard_ridge(
+            dat,
+            evts,
+            times,
+            model;
+            target = target,
+            nfolds = nfolds,
+            seed = seed
+        )
+        scores[!, :target] = fill(string(target), nrow(scores))
+        push!(score_tables, scores)
+        yhats[target] = yhat
     end
 
-    return (
+    return(
         scores = vcat(score_tables...),
         yhats = yhats
-    )
-end
-
-function run_standard_decoding(
-    cfg::ConditionContinuousConfig,
-    simulation;
-    model = make_ridge_tuned_model(),
-    target::Symbol = :continuous,
-    nfolds::Int = 3,
-    seed::Int = 12
-)
-    return _run_standard_decoding(
-        simulation,
-        (:clean, :overlap, :confound, :both);
-        model = model,
-        targets = (target,),
-        nfolds = nfolds,
-        seed = seed
-    )
-end
-
-function run_standard_decoding(
-    cfg::CorrelatedContinuousConfig,
-    simulation;
-    model = make_ridge_tuned_model(),
-    targets = (
-        :continuous1,
-        :continuous2,
-        :continuous3
-    ),
-    nfolds::Int = 3,
-    seed::Int = 12
-)
-
-    return _run_standard_decoding(
-        simulation,
-        (:no_overlap, :overlap);
-        model = model,
-        targets = targets,
-        nfolds = nfolds,
-        seed = seed
     )
 end
