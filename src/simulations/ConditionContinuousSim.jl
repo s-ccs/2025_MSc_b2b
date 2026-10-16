@@ -33,13 +33,9 @@ function UnfoldSim.generate_events(
     design::ConditionContinuousDesign
 )
     @assert iseven(design.n_trials)
-
     n_half = design.n_trials ÷ 2
-
     condition = vcat(fill("car", n_half), fill("face", n_half))
-
     shuffle!(rng, condition)
-
     condition_num = ifelse.(condition .== "face", 1.0, -1.0) # face = 1, car = -1
 
     if design.confound
