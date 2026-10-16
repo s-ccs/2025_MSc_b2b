@@ -1,4 +1,8 @@
-function concatenate_runs(subject, all_events; eeg_dir)
+function concatenate_runs(
+    subject, 
+    all_events; 
+    eeg_dir
+)
     eeg_parts = Matrix{Float64}[]
     events_parts = DataFrame[]
 
@@ -28,4 +32,15 @@ function concatenate_runs(subject, all_events; eeg_dir)
     @assert size(eeg_combined, 2) == sample_offset
     
     return (eeg_combined, events_combined)
+end
+
+function prepare_roamm_epochs(
+    eeg,
+    evts;
+    sfreq = 256.0,
+    epoch_window = (-0.1, 1.0)
+)
+    dat_epoched, times = Unfold.epoch(eeg, evts, epoch_window, sfreq)
+    evts_epoched, dat_epoched = Unfold.drop_missing_epochs(evts, dat_epoched)
+    return dat_epoched, evts_epoched, times
 end

@@ -98,7 +98,7 @@ function fit_standard_decoding_roamm(
     times;
     model = make_ridge_tuned_model(),
     targets = (:word_length, :frequency_zipf, :word_surprisal),
-    nfolds:Int = 5, 
+    nfolds::Int = 5, 
     seed::Int = 12
 )
     score_tables = DataFrame[]

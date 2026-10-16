@@ -57,7 +57,7 @@ open(log_path, "a") do log
             eeg, evts = MScB2B.concatenate_runs(subject, all_events; eeg_dir = eeg_dir)
 
             # 2. Extract fixation-locked epochs
-            dat_epoched, events_epoched, times = prepare_roamm_epochs(eeg, evts; sfreq = SFREQ)
+            dat_epoched, events_epoched, times = MScB2B.prepare_roamm_epochs(eeg, evts; sfreq = SFREQ)
             @assert size(dat_epoched, 3) == nrow(events_epoched)
             @assert size(dat_epoched, 2) == length(times)
  
@@ -77,16 +77,14 @@ open(log_path, "a") do log
             # 5. Save results
             temp_path = result_path * ".tmp"
 
-            serialize(
-                temp_path,
-                (
-                    subject = subject,
-                    predictors = PREDICTORS,
-                    inner_nfolds = INNER_NFOLDS,
-                    outer_nfolds = OUTER_NFOLDS,
-                    scores = result.scores
-                )
-            )
+            serialize(temp_path, (
+                subject = subject,
+                predictors = PREDICTORS,
+                inner_nfolds = INNER_NFOLDS,
+                outer_nfolds = OUTER_NFOLDS,
+                scores = result.scores
+            ))
+            
         
             mv(temp_path, result_path; force = true)
             elapsed = round(time() - t0; digits = 2)

@@ -35,7 +35,8 @@ include("pipelines/04_one_step_b2b.jl")
 include("pipelines/05_two_step_b2b.jl")
 
 # ROAMM 
-include("roamm/concatenate_runs.jl")
+include("roamm/00_prepare_roamm_data.jl")
+include("roamm/01_standard_decoding_roamm.jl")
 include("roamm/two_step_b2b_roamm.jl")
 
 
@@ -57,5 +58,6 @@ export plot_correlated_results
 export plot_correlated_decoding
 
 export concatenate_runs
+export prepare_roamm_epochs
 export fit_two_step_b2b_roamm
 end
