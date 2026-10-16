@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "ipykernel>=7.3.0",
     "jupyterlab>=4.6.3",
+    "matplotlib>=3.11.2",
     "pandas>=3.0.6",
     "torch>=2.14.0",
     "transformers>=5.17.0",
