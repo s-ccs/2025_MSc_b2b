@@ -67,6 +67,7 @@ function make_cond_cont_components(cfg::ConditionContinuousConfig)
         formula = @formula(0 ~ 1 + condition),
         β = [cfg.β0_n170, cfg.β_condition],
         contrasts = Dict()
+        # contrasts = Dict(:condition => EffectCoding())
     )
 
     p300 = UnfoldSim.LinearModelComponent(
