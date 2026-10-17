@@ -12,13 +12,7 @@ function _fit_rerp_case(
     evts = case_data.events_continuous
 
     # rERP / FIR analysis design
-    design = [
-        "stimulus" => (
-            formula,
-            Unfold.firbasis(
-                τ = [-0.1, 1.0],
-                sfreq = cfg.sfreq
-            ))]
+    design = ["stimulus" => (formula, Unfold.firbasis(τ = [-0.1, 1.0], sfreq = cfg.sfreq))]
     
     return Unfold.fit(
         UnfoldDecodingModel,

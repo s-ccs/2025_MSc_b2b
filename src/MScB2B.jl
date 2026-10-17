@@ -37,6 +37,9 @@ include("pipelines/05_two_step_b2b.jl")
 # ROAMM 
 include("roamm/00_prepare_roamm_data.jl")
 include("roamm/01_standard_decoding_roamm.jl")
+include("roamm/02_rerp_decoding_roamm.jl")
+include("roamm/03_plain_b2b_roamm.jl")
+include("roamm/04_one_step_b2b_roamm.jl")
 include("roamm/two_step_b2b_roamm.jl")
 
 
