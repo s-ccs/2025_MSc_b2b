@@ -12,8 +12,10 @@ using LinearAlgebra
 LinearAlgebra.BLAS.set_num_threads(1)
 
 # Configuration
-eeg_dir = "/scratch/data/ROAMM/outputs/eeg"
-events_path = "/scratch/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
+eeg_dir = "/home/st/st_us-051900/st_st181570/data/ROAMM/outputs/eeg"
+events_path = "/home/st/st_us-051900/st_st181570/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
+#eeg_dir = "/scratch/data/ROAMM/outputs/eeg"
+#events_path = "/scratch/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv" 
 PROJECT_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
 models_dir = joinpath(PROJECT_ROOT, "results", "models", "roamm")
 logs_dir = joinpath(PROJECT_ROOT, "results", "logs", "roamm")
@@ -27,10 +29,13 @@ SFREQ = 256.0
 
 all_events = CSV.read(events_path, DataFrame)
 subjects = sort(unique(all_events.subject_id))
+task_id = parse(Int, ENV["SLURM_ARRAY_TASK_ID"])
+@assert 1 <= task_id <= length(subjects)
+subjects = [subjects[task_id]]
 
 log_path = joinpath(
     logs_dir,
-    "roamm_$(SCALING)_cv$(CROSS_VAL_REPS).log"
+    "roamm_$(subjects[1])_$(SCALING)_cv$(CROSS_VAL_REPS).log"
 )
 log_lock = ReentrantLock()
 
@@ -55,7 +60,7 @@ open(log_path, "a") do log
     logmsg("BLAS threads: $(LinearAlgebra.BLAS.get_num_threads())")
     logmsg("========================================")
 
-    Threads.@threads for i in eachindex(subjects)
+    for i in eachindex(subjects)
 
         subject = subjects[i]
 
@@ -119,6 +124,7 @@ open(log_path, "a") do log
         catch err
             logmsg("FAILED: $subject")
             logmsg(sprint(showerror, err, catch_backtrace()))
+            rethrow()
         end
     end
 
