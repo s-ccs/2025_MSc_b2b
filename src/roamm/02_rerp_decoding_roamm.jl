@@ -4,12 +4,14 @@ function fit_rerp_decoding_roamm(
     model = make_ridge_tuned_model(),
     targets = (:word_length, :frequency_zipf, :word_surprisal),
     nfolds::Int = 5, 
-    sfreq::Float64 = 256.0
+    sfreq::Float64 = 256.0,
+    scaling::Symbol = :center
 )
-
+    evts = copy(evts)
+    model_predictors = _prepare_predictors!(evts, collect(targets); scaling = scaling)
     design = [
         "fixation" => (
-            @formula(0 ~ 1 + word_length + frequency_zipf + word_surprisal),
+            _make_formula(model_predictors),
             Unfold.firbasis(τ = [-0.1, 1.0], sfreq = sfreq)
         )
     ]
@@ -17,19 +19,23 @@ function fit_rerp_decoding_roamm(
     score_tables = DataFrame[]
     fitted_models = Dict{Symbol, Any}()
 
-    for target in targets
+    for (target, model_target) in zip(targets, model_predictors)
+        println("START decoding: $target")
+        flush(stdout)
         uf_rerp = Unfold.fit(
             UnfoldDecodingModel,
             design,
             evts,
             eeg,
             model,
-            "fixation" => target;
+            "fixation" => model_target;
             nfolds = nfolds,
             predict_type = Continuous,
             eventcolumn = :event,
-            multithreading = false
+            multithreading = false,
+            unfold_fit_options = (; show_progress = false)
         )
+        println("FINISHED decoding $target")
 
         scores = DataFrame(
             Unfold.coeftable(
