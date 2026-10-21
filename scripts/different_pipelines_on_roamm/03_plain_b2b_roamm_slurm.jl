@@ -75,7 +75,7 @@ open(log_path, "a") do log
         
             mv(temp_path, result_path; force = true)
             elapsed = round((time() - t0) / 60; digits = 1)
-            logmsg("SUCCESS: $subject | Fixations: $(nrow(evts))| Time: $(elapsed) min")
+            logmsg("SUCCESS: $subject | Epochs: $(nrow(evts_epoched))| Time: $(elapsed) min")
 
         catch err 
             logmsg("FAILED: $subject")
