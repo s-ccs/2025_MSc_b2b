@@ -25,6 +25,7 @@ docs/site/
 *.m~
 
 *.jls
+*.out
 
 .venv/
 .venv_old/
