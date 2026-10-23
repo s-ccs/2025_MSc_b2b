@@ -18,8 +18,8 @@ eeg_dir = "/scratch/data/ROAMM/outputs/eeg"
 events_path = "/scratch/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
 
 PROJECT_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-models_dir = joinpath(PROJECT_ROOT, "results", "models", "roamm", "standard")
-logs_dir = joinpath(PROJECT_ROOT, "results", "logs", "roamm", "standard")
+models_dir = joinpath(PROJECT_ROOT, "results", "models", "roamm", "standard_foldmean")
+logs_dir = joinpath(PROJECT_ROOT, "results", "logs", "roamm", "standard_foldmean")
 
 mkpath(models_dir)
 mkpath(logs_dir)
@@ -74,6 +74,7 @@ open(log_path, "a") do log
                 nfolds = OUTER_NFOLDS,
                 seed = SEED
             )
+            @assert :r_foldmean in propertynames(result.scores)
             # 5. Save results
             temp_path = result_path * ".tmp"
 
