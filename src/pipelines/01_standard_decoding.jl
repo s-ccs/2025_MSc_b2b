@@ -64,7 +64,11 @@ function decode_standard_ridge(
     # trials x timepoints
     yhat = fill(NaN, n_trials, n_timepoints)
 
-    for (train_indices, test_indices) in folds
+    # folds x timepoints
+    fold_scores = fill(NaN, length(folds), n_timepoints)
+    
+    for (fold_idx, (train_indices, test_indices)) in enumerate(folds)
+
         machines = UnfoldDecode.fit_timepoints(
             model,
             @view(dat[:, :, train_indices]),
@@ -77,7 +81,16 @@ function decode_standard_ridge(
         )
 
         for t in eachindex(predictions)
-            yhat[test_indices, t] .= Float64.(predictions[t])
+            pred = Float64.(predictions[t])
+        
+            # Original: collect out-of-fold predictions
+            yhat[test_indices, t] .= pred
+
+            # New: correlation within each fold
+            fold_scores[fold_idx, t] = cor(
+                pred,
+                y[test_indices]
+            )
         end
     end
 
@@ -86,7 +99,9 @@ function decode_standard_ridge(
         time = Float64.(times),
         # time = (collect(1:n_timepoints) .- 1) ./ cfg.sfreq,
         r = [cor(yhat[:, t], y) for t in 1:n_timepoints],
-        r_squared = [RSquared()(yhat[:, t], y) for t in 1:n_timepoints]
+        # New: mean correlation across CV folds
+        r_foldmean = vec(mean(fold_scores, dims =1)),
+        #r_squared = [RSquared()(yhat[:, t], y) for t in 1:n_timepoints]
     )
 
     return scores, yhat
