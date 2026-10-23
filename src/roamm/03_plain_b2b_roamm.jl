@@ -7,7 +7,7 @@ function fit_plain_b2b_roamm(
 )
 
     evts = copy(evts)
-    predictors = [word_length, :frequency_zipf, :word_surprisal]
+    predictors = [:word_length, :frequency_zipf, :word_surprisal]
     model_predictors = _prepare_predictors!(evts, predictors; scaling = scaling)
 
     formula_b2b = _make_formula(model_predictors)
