@@ -18,8 +18,8 @@ eeg_dir = "/scratch/data/ROAMM/outputs/eeg"
 events_path = "/scratch/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
 
 PROJECT_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-models_dir = joinpath(PROJECT_ROOT, "results", "models", "roamm", "standard_foldmean")
-logs_dir = joinpath(PROJECT_ROOT, "results", "logs", "roamm", "standard_foldmean")
+models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm", "standard_foldmean")
+logs_dir = joinpath(PROJECT_ROOT, "slurm_results", "logs", "roamm", "standard_foldmean")
 
 mkpath(models_dir)
 mkpath(logs_dir)
@@ -34,7 +34,7 @@ SFREQ = 256.0
 all_events = CSV.read(events_path, DataFrame)
 subjects = sort(unique(all_events.subject_id))
 
-log_path = joinpath(logs_dir, "standard_decoding.log")
+log_path = joinpath(logs_dir, "standard_decoding_foldmean.log")
 log_lock = ReentrantLock()
 open(log_path, "a") do log
     logmsg(msg) = lock(() -> (println(log, msg); flush(log)), log_lock)
@@ -43,7 +43,7 @@ open(log_path, "a") do log
 
     Threads.@threads for i in eachindex(subjects)
         subject = subjects[i]
-        result_path = joinpath(models_dir, "$(subject)_standard_ridge.jls")
+        result_path = joinpath(models_dir, "$(subject)_standard_ridge_foldmean.jls")
         if isfile(result_path)
             logmsg("SKIPPED: $subject")
             continue
@@ -74,7 +74,7 @@ open(log_path, "a") do log
                 nfolds = OUTER_NFOLDS,
                 seed = SEED
             )
-            @assert :r_foldmean in propertynames(result.scores)
+            @assert :r in propertynames(result.scores)
             # 5. Save results
             temp_path = result_path * ".tmp"
 

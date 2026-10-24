@@ -98,7 +98,7 @@ function decode_standard_ridge(
         timepoint = collect(1:n_timepoints),
         time = Float64.(times),
         # time = (collect(1:n_timepoints) .- 1) ./ cfg.sfreq,
-        r_pooled = [cor(yhat[:, t], y) for t in 1:n_timepoints],
+        r_pooled_oof = [cor(yhat[:, t], y) for t in 1:n_timepoints],
         # New: mean correlation across CV folds
         r = vec(mean(fold_scores, dims =1)),
         #r_squared = [RSquared()(yhat[:, t], y) for t in 1:n_timepoints]
