@@ -18,8 +18,8 @@ eeg_dir = "/scratch/data/ROAMM/outputs/eeg"
 events_path = "/scratch/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
 
 PROJECT_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm", "standard_foldmean")
-logs_dir = joinpath(PROJECT_ROOT, "slurm_results", "logs", "roamm", "standard_foldmean")
+models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm", "standard_centering_foldmean")
+logs_dir = joinpath(PROJECT_ROOT, "slurm_results", "logs", "roamm", "standard_centering_foldmean")
 
 mkpath(models_dir)
 mkpath(logs_dir)
@@ -30,11 +30,12 @@ OUTER_NFOLDS = 5
 RESOLUTION = 10
 SEED = 12 
 SFREQ = 256.0
+SCALING = :center
 
 all_events = CSV.read(events_path, DataFrame)
 subjects = sort(unique(all_events.subject_id))
 
-log_path = joinpath(logs_dir, "standard_decoding_foldmean.log")
+log_path = joinpath(logs_dir, "standard_decoding_centering_foldmean.log")
 log_lock = ReentrantLock()
 open(log_path, "a") do log
     logmsg(msg) = lock(() -> (println(log, msg); flush(log)), log_lock)
@@ -43,7 +44,7 @@ open(log_path, "a") do log
 
     Threads.@threads for i in eachindex(subjects)
         subject = subjects[i]
-        result_path = joinpath(models_dir, "$(subject)_standard_ridge_foldmean.jls")
+        result_path = joinpath(models_dir, "$(subject)_$(SCALING)standard_ridge_foldmean.jls")
         if isfile(result_path)
             logmsg("SKIPPED: $subject")
             continue
@@ -72,7 +73,8 @@ open(log_path, "a") do log
                 model = model,
                 targets = PREDICTORS,
                 nfolds = OUTER_NFOLDS,
-                seed = SEED
+                seed = SEED,
+                scaling = SCALING
             )
             @assert :r in propertynames(result.scores)
             # 5. Save results
@@ -81,6 +83,7 @@ open(log_path, "a") do log
             serialize(temp_path, (
                 subject = subject,
                 predictors = PREDICTORS,
+                scaling = SCALING,
                 inner_nfolds = INNER_NFOLDS,
                 outer_nfolds = OUTER_NFOLDS,
                 scores = result.scores
