@@ -13,8 +13,11 @@ end
 # ╔═╡ 4001b213-854f-4305-8238-7a1742945c9a
 begin
 	using Serialization, Unfold, DataFrames
-	using CairoMakie, Statistics
+	using CairoMakie, Statistics, CSV
 end
+
+# ╔═╡ 4f8ae38b-5aff-4ab5-b546-9b1e88c1dc85
+import MScB2B
 
 # ╔═╡ d63e9e0e-1a2a-4832-be56-1a5de5085976
 md"""
@@ -42,7 +45,6 @@ function load_b2b_results(results_dir, model_field::Symbol)
 	for file in files
 		result = deserialize(file)
 		df = DataFrame(Unfold.coeftable(getproperty(result, model_field)))
-		df.coefname = replace.(string.(df.coefname), r"_c$" => "")
 		df.subject = fill(String(result.subject), nrow(df))
 		df.estimate_signed = copy(df.estimate)
 		df.estimate = abs.(df.estimate_signed)
@@ -114,136 +116,6 @@ end
 md"""
 # Plotting"""
 
-# ╔═╡ 2cbf33d9-deea-4479-8f57-147e3b0a7e99
-function plot_roamm_decoding_log(
-    scores_all,
-    scores_summary;
-    title = "ROAMM — Decoding"
-)
-    targets = [
-        "word_length",
-        "frequency_zipf",
-        "word_surprisal"
-    ]
-
-    titles = [
-        "Word length",
-        "Zipf frequency",
-        "Word surprisal"
-    ]
-
-    n_subjects = length(unique(scores_all.subject))
-
-    fig = Figure(size = (1500, 460))
-    colgap!(fig.layout, 30)
-
-    # Average repeated scores within each subject/time
-    subject_scores = combine(
-        groupby(scores_all, [:subject, :target, :time]),
-        :r => mean => :r
-    )
-
-    for (i, target) in enumerate(targets)
-
-        sub = subject_scores[subject_scores.target .== target, :]
-
-        sm = sort(
-            scores_summary[scores_summary.target .== target, :],
-            :time
-        )
-
-        ax = Axis(
-            fig[1, i],
-            title = titles[i],
-            xlabel = "Time relative to fixation onset (s)",
-            ylabel = i == 1 ? "Correlation (r, symlog scale)" : "",
-            xticks = -0.1:0.1:1.0,
-
-            # Symmetric logarithmic scale
-            yscale = Makie.Symlog10(0.01),
-
-            yticks = (
-                [-0.1, -0.01, 0.0, 0.01, 0.1],
-                ["−0.1", "−0.01", "0", "0.01", "0.1"]
-            ),
-            yticklabelsvisible = i == 1,
-            yticksvisible = i == 1,
-
-            topspinevisible = false,
-            rightspinevisible = false,
-            xgridvisible = false,
-            ygridvisible = false
-        )
-
-        # Individual subjects
-        for subject in unique(sub.subject)
-
-            ss = sort(
-                sub[sub.subject .== subject, :],
-                :time
-            )
-
-            lines!(
-                ax,
-                ss.time,
-                ss.r,
-                color = ("#85B8D8", 0.18),
-                linewidth = 1
-            )
-        end
-
-        # Group mean
-        lines!(
-            ax,
-            sm.time,
-            sm.r_mean,
-            color = "#155A91",
-            linewidth = 3
-        )
-
-        # 10% winsorized mean
-        lines!(
-            ax,
-            sm.time,
-            sm.winsor10,
-            color = :darkorange,
-            linestyle = :dash,
-            linewidth = 2
-        )
-
-        # Fixation onset
-        vlines!(
-            ax,
-            [0.0],
-            color = (:black, 0.55),
-            linestyle = :dash,
-            linewidth = 1
-        )
-
-        # Zero correlation
-        hlines!(
-            ax,
-            [0.0],
-            color = (:gray, 0.5),
-            linestyle = :dash,
-            linewidth = 1
-        )
-
-        # Identical axis limits for all three predictors
-        xlims!(ax, -0.1, 1.0)
-        ylims!(ax, -0.25, 0.25)
-    end
-
-    Label(
-        fig[0, 1:3],
-        "$title (N = $n_subjects)",
-        fontsize = 22,
-        font = :bold
-    )
-
-    return fig
-end
-
 # ╔═╡ 30d5aa98-a963-44ab-bded-24058687f5df
 function plot_roamm_decoding(scores_all, scores_summary;
     title = "ROAMM — rERP decoding"
@@ -289,24 +161,25 @@ function plot_roamm_decoding(scores_all, scores_summary;
             :time
         )
 
-        lines!(
-            ax,
-            sm.time,
-            sm.r_mean,
-            color = "#155A91",
-            linewidth = 3
-        )
-
         # 10% winsorized mean
         lines!(
             ax,
             sm.time,
-            sm.winsor10,
-            color = "#D55E00",
-            linewidth = 2,
-            linestyle = :dash
+            sm.winsor20,
+            color = "#246B9A",
+            linewidth = 3
         )
-
+        
+        # Median
+        lines!(
+            ax,
+            sm.time,
+            sm.r_median,
+            #color = :darkorange,
+            color = "#D66A58",
+            linestyle = :dash,
+            linewidth = 2
+        )
         # Fixation onset
         vlines!(
             ax, [0.0],
@@ -336,6 +209,140 @@ function plot_roamm_decoding(scores_all, scores_summary;
     return fig
 end
 
+# ╔═╡ fadd9408-edeb-4b56-bf33-95238fc4adfb
+function plot_roamm_decoding_log(
+    scores_all,
+    scores_summary;
+    title = "ROAMM — Decoding"
+)
+    targets = [
+        "word_length",
+        "frequency_zipf",
+        "word_surprisal"
+    ]
+
+    titles = [
+        "Word length",
+        "Zipf frequency",
+        "Word surprisal"
+    ]
+
+    n_subjects = length(unique(scores_all.subject))
+
+    fig = Figure(size = (1500, 460))
+    colgap!(fig.layout, 30)
+
+    # Average repeated scores within each subject/time
+    subject_scores = combine(
+        groupby(scores_all, [:subject, :target, :time]),
+        :r => mean => :r
+    )
+
+    for (i, target) in enumerate(targets)
+
+        sub = subject_scores[
+            subject_scores.target .== target, :
+        ]
+
+        sm = sort(
+            scores_summary[
+                scores_summary.target .== target, :
+            ],
+            :time
+        )
+
+        ax = Axis(
+            fig[1, i],
+            title = titles[i],
+            xlabel = "Time relative to fixation onset (s)",
+            ylabel = i == 1 ? "Absolute decoding correlation |r| (log scale)" : "",
+            xticks = -0.1:0.1:1.0,
+
+            yscale = log10,
+
+            yticks = (
+                [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0],
+                ["10⁻⁵", "10⁻⁴", "10⁻³", "10⁻²", "10⁻¹", "10⁰"]
+            ),
+
+            yticklabelsvisible = i == 1,
+            yticksvisible = i == 1,
+
+            topspinevisible = false,
+            rightspinevisible = false,
+            xgridvisible = false,
+            ygridvisible = false
+        )
+
+        # Individual subjects
+        for subject in unique(sub.subject)
+
+            ss = sort(
+                sub[sub.subject .== subject, :],
+                :time
+            )
+
+            values = abs.(ss.r)
+            values[values .<= 0] .= NaN
+
+            lines!(
+                ax,
+                ss.time,
+                values,
+                color = ("#B6D8EF", 0.15),
+                linewidth = 1
+            )
+        end
+
+        # 20% winsorized mean
+        winsor_values = abs.(sm.winsor10)
+        winsor_values[winsor_values .<= 0] .= NaN
+
+        lines!(
+            ax,
+            sm.time,
+            winsor_values,
+            color = "#246B9A",
+            linewidth = 3
+        )
+
+        # Median
+        median_values = abs.(sm.r_median)
+        median_values[median_values .<= 0] .= NaN
+
+        lines!(
+            ax,
+            sm.time,
+            median_values,
+            color = "#D66A58",
+            linestyle = :dash,
+            linewidth = 2
+        )
+
+        # Fixation onset
+        vlines!(
+            ax,
+            [0.0],
+            color = (:black, 0.55),
+            linestyle = :dash,
+            linewidth = 1
+        )
+
+        # Shared axis limits
+        xlims!(ax, -0.1, 1.0)
+        ylims!(ax, 1e-5, 1.0)
+    end
+
+    Label(
+        fig[0, 1:3],
+        "$title (N = $n_subjects)",
+        fontsize = 22,
+        font = :bold
+    )
+
+    return fig
+end
+
 # ╔═╡ 9b318652-6a11-417a-a795-f2c119562e57
 function plot_roamm_b2b(
     scores_all,
@@ -344,15 +351,11 @@ function plot_roamm_b2b(
 )
 
     targets = [
-        "word_length",
-        "frequency_zipf",
-        "word_surprisal"
+        "word_length_c",
+        "frequency_zipf_c",
+        "word_surprisal_c"
     ]
 
-    # Handle centered predictors in two-step B2B
-    if "word_length_c" in scores_all.coefname
-        targets = targets .* "_c"
-    end
 
     titles = [
         "Word length",
@@ -410,25 +413,25 @@ function plot_roamm_b2b(
             )
         end
 
-        # Group mean
+        # 10% winsorized mean
         lines!(
             ax,
             sm.time,
-            sm.estimate_mean,
-            color = "#155A91",
+            sm.winsor20,
+            color = "#246B9A",
             linewidth = 3
         )
-
-        # Group median
+        
+        # Median
         lines!(
             ax,
             sm.time,
             sm.estimate_median,
-            color = :darkorange,
+            #color = :darkorange,
+            color = "#D66A58",
             linestyle = :dash,
             linewidth = 2
         )
-
         # Fixation onset
         vlines!(
             ax,
@@ -457,9 +460,9 @@ end
 function plot_roamm_b2b_heatmap(scores_all; title = "ROAMM — B2B — subject-level heatmaps")
 
     targets = [
-        "word_length",
-        "frequency_zipf",
-        "word_surprisal"
+        "word_length_c",
+        "frequency_zipf_c",
+        "word_surprisal_c"
     ]
 
     titles = [
@@ -804,6 +807,209 @@ function plot_roamm_b2b_mean(
     Label(
         fig[0, 1:3],
         title,
+        fontsize = 22,
+        font = :bold
+    )
+
+    return fig
+end
+
+# ╔═╡ 4685dc86-21ec-4a03-ac5f-41f7ba9d46b7
+function plot_standard_vs_rerp(
+    scores_standard,
+    scores_rerp
+)
+    targets = ["word_length", "frequency_zipf", "word_surprisal"]
+    titles = ["Word length", "Zipf frequency", "Word surprisal"]
+
+    # Only compare subjects available in BOTH pipelines
+    subjects = intersect(
+        unique(scores_standard.subject),
+        unique(scores_rerp.subject)
+    )
+
+    @info "Matched subjects" n = length(subjects)
+    isempty(subjects) && error("No matching subjects found.")
+
+    function summarize_matched(df)
+        matched = filter(row -> row.subject in subjects, df)
+
+        # Average any repeated scores within subject/time
+        subject_mean = combine(
+            groupby(matched, [:subject, :target, :time]),
+            :r => mean => :r
+        )
+
+        # Mean across subjects
+        combine(
+            groupby(subject_mean, [:target, :time]),
+            :r => mean => :winsor20
+        )
+    end
+
+    standard_mean = summarize_matched(scores_standard)
+    rerp_mean = summarize_matched(scores_rerp)
+
+    fig = Figure(size = (1500, 460))
+    colgap!(fig.layout, 35)
+
+    for (i, target) in enumerate(targets)
+        ax = Axis(
+            fig[1, i],
+            title = titles[i],
+            xlabel = "Time relative to fixation onset (s)",
+            ylabel = i == 1 ? "Decoding correlation (r)" : "",
+            xticks = -0.1:0.2:1.0,
+            yticklabelsvisible = i == 1,
+            topspinevisible = false,
+            rightspinevisible = false,
+            xgridvisible = false,
+            ygridvisible = false
+        )
+
+        std = sort(
+            standard_mean[standard_mean.target .== target, :],
+            :time
+        )
+
+        rer = sort(
+            rerp_mean[rerp_mean.target .== target, :],
+            :time
+        )
+
+        lines!(
+            ax, std.time, std.winsor20;
+            color = "#0072B2",
+            linewidth = 3,
+            label = "Standard decoding"
+        )
+
+        lines!(
+            ax, rer.time, rer.winsor20;
+            color = "#D55E00",
+            linewidth = 3,
+            label = "rERP decoding"
+        )
+
+        hlines!(ax, [0.0], color = (:gray, 0.4), linestyle = :dash)
+        vlines!(ax, [0.0], color = (:black, 0.5), linestyle = :dash)
+
+        xlims!(ax, -0.1, 1.0)
+        ylims!(ax, -0.05, 0.15)
+
+        if i == 1
+            axislegend(ax, position = :rt, framevisible = false)
+        end
+    end
+
+    Label(
+        fig[0, 1:3],
+        "ROAMM — Standard vs rERP Decoding (N = $(length(subjects)))",
+        fontsize = 22,
+        font = :bold
+    )
+
+    return fig
+end
+
+# ╔═╡ 4ea40ee8-fdd7-47c8-8dc5-24d21c6f86d9
+function plot_plain_vs_two_step_b2b(
+    scores_plain,
+    scores_two_step
+)
+    targets = [
+        "word_length_c",
+        "frequency_zipf_c",
+        "word_surprisal_c"
+    ]
+
+    titles = ["Word length", "Zipf frequency", "Word surprisal"]
+
+    # Only compare subjects present in both methods
+    subjects = intersect(
+        unique(scores_plain.subject),
+        unique(scores_two_step.subject)
+    )
+
+    @info "Matched subjects" n = length(subjects)
+    isempty(subjects) && error("No matching subjects found.")
+
+    function summarize_matched(df)
+        matched = filter(
+            row -> row.subject in subjects &&
+                   string(row.coefname) in targets,
+            df
+        )
+
+        # One score per subject, predictor, time point
+        subject_mean = combine(
+            groupby(matched, [:subject, :coefname, :time]),
+            :estimate => mean => :estimate
+        )
+
+        # Mean across subjects
+        combine(
+            groupby(subject_mean, [:coefname, :time]),
+            :estimate => mean => :estimate_mean
+        )
+    end
+
+    plain_mean = summarize_matched(scores_plain)
+    two_step_mean = summarize_matched(scores_two_step)
+
+    fig = Figure(size = (1500, 460))
+    colgap!(fig.layout, 35)
+
+    for (i, target) in enumerate(targets)
+        ax = Axis(
+            fig[1, i],
+            title = titles[i],
+            xlabel = "Time relative to fixation onset (s)",
+            ylabel = i == 1 ? "Absolute B2B coefficient" : "",
+            xticks = -0.1:0.2:1.0,
+            yticklabelsvisible = i == 1,
+            topspinevisible = false,
+            rightspinevisible = false,
+            xgridvisible = false,
+            ygridvisible = false
+        )
+
+        plain = sort(
+            plain_mean[string.(plain_mean.coefname) .== target, :],
+            :time
+        )
+
+        two = sort(
+            two_step_mean[string.(two_step_mean.coefname) .== target, :],
+            :time
+        )
+
+        lines!(
+            ax, plain.time, plain.estimate_mean;
+            color = "#0072B2",
+            linewidth = 3,
+            label = "Plain B2B"
+        )
+
+        lines!(
+            ax, two.time, two.estimate_mean;
+            color = "#D55E00",
+            linewidth = 3,
+            label = "Two-step B2B"
+        )
+
+        vlines!(ax, [0.0], color = (:black, 0.5), linestyle = :dash)
+
+        xlims!(ax, -0.1, 1.0)
+
+        if i == 1
+            axislegend(ax, position = :rt, framevisible = false)
+        end
+    end
+
+    Label(
+        fig[0, 1:3],
+        "ROAMM — Plain vs Two-step B2B (N = $(length(subjects)))",
         fontsize = 22,
         font = :bold
     )
@@ -1278,7 +1484,7 @@ md"""
 
 # ╔═╡ 326c7e77-55e6-48a4-b834-31b4a635ec12
 begin
-	scores_standard_decoding = load_roamm_decoding_scores(joinpath(base_dir, "standard_decoding"))
+	scores_standard_decoding = load_roamm_decoding_scores(joinpath(base_dir, "standard_centering_foldmean"))
 	summary_standard_decoding = summarize_decoding(scores_standard_decoding)
 	fig_standard = plot_roamm_decoding(
 		scores_standard_decoding,
@@ -1292,16 +1498,21 @@ end
 propertynames(scores_standard_decoding)
 
 # ╔═╡ c82a398e-8581-455c-b97d-7884f7db39aa
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	fig_standard_log = plot_roamm_decoding_log(
 		scores_standard_decoding,
 		summary_standard_decoding;
-		title = "ROAMM - Standard decoding"
+		#title = "ROAMM - Standard decoding"
 	)
 	fig_standard_log
 end
+  ╠═╡ =#
 
 # ╔═╡ 54a711cb-5284-4a0a-8314-3e6cf9dc2bc7
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	fig_standard_mean = plot_roamm_decoding_mean(
 		summary_standard_decoding;
@@ -1309,6 +1520,7 @@ begin
 	)
 	fig_standard_mean
 end
+  ╠═╡ =#
 
 # ╔═╡ d6e439f9-b27d-4bcd-ae99-e06b061f1264
 begin
@@ -1327,7 +1539,7 @@ md"""
 # ╔═╡ 8f43b5ca-8c27-4180-9fbd-975fd881c762
 begin
     scores_rerp = load_roamm_decoding_scores(
-        joinpath("/home/st/st_us-051900/st_st181570/2025_MSc_b2b/slurm_results/models/roamm/rerp_without_centering")
+        joinpath("/home/st/st_us-051900/st_st181570/2025_MSc_b2b/slurm_results/models/roamm/rerp")
     )
 
     summary_rerp = summarize_decoding(scores_rerp)
@@ -1338,9 +1550,51 @@ begin
         title = "ROAMM — rERP decoding"
     )
 
-    # save("roamm_rerp_decoding.svg", fig_rerp)
-
     fig_rerp
+end
+
+# ╔═╡ d8c8e4f3-833c-44cf-9c48-814d42fd87a6
+begin
+	names(scores_rerp)
+	first(scores_rerp, 5)
+end
+
+# ╔═╡ 6c9341b3-076c-41a7-99c3-c154aa13e8f5
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+    fig_comparison = plot_standard_vs_rerp(
+        scores_standard_decoding,
+        scores_rerp
+    )
+    
+    fig_comparison
+end
+  ╠═╡ =#
+
+# ╔═╡ 62b100f0-f9d2-4a2a-964c-86179e9546e6
+names(scores_rerp)
+
+# ╔═╡ 0e68529d-5fc6-4a16-b151-8558fe9d52bb
+length(unique(scores_rerp.subject))
+
+# ╔═╡ 6c5b118d-5f09-40ed-9805-d49085dfa0f1
+begin
+    fig_comparison = plot_standard_vs_rerp(
+        scores_standard_decoding,
+        scores_rerp
+    )
+    
+    fig_comparison
+end
+
+# ╔═╡ ffcacd1d-38b4-4f34-8f9b-dd90606d7f85
+begin
+    @show extrema(scores_standard_decoding.time)
+    @show extrema(scores_rerp.time)
+
+    @show length(unique(scores_standard_decoding.time))
+    @show length(unique(scores_rerp.time))
 end
 
 # ╔═╡ 07b34fdd-1e7d-4307-aea3-0098d2f75ce3
@@ -1352,6 +1606,15 @@ begin
 
     fig_rERP_decoding_heatmap
 end
+
+# ╔═╡ c3cec440-5592-4f29-8dcc-c3ce58b3a1d0
+md"""
+# Standard decoding check
+"""
+
+
+# ╔═╡ d3503f74-b9d5-4ce3-b553-fe647d3e3921
+
 
 # ╔═╡ 130e150c-a908-4d70-9b1d-356a6009416b
 md"""
@@ -1376,15 +1639,6 @@ begin
     fig_plain_heatmap
 end
 
-# ╔═╡ 6b99c440-4177-45ea-8c12-3c1faa0db6fd
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	save("final_roamm_plain_b2b.svg", fig_plain_b2b)
-	save("final_roamm_plain_b2b_heatmap.svg", fig_plain_heatmap)
-end
-  ╠═╡ =#
-
 # ╔═╡ d05990b6-7035-478a-889a-73dd8be464d9
 md"""
 # Plot two-step b2b
@@ -1399,6 +1653,17 @@ begin
 	#save("roamm_two_step_final.svg", fig_two_step)
 	fig_two_step
 	
+end
+
+# ╔═╡ f619cfe4-6758-4535-9056-7debf7739312
+begin 
+    fig = plot_plain_vs_two_step_b2b(
+    scores_plain_b2b,
+    scores_two_step
+)
+
+fig
+#save("roamm_plain_vs_two_step_b2b.svg", fig)
 end
 
 # ╔═╡ a7da75d3-85af-4c50-a580-a28cdd9b9d6a
@@ -1417,12 +1682,20 @@ begin
     fig_two_step_heatmap
 end
 
-# ╔═╡ c520c71d-9d96-4883-93ae-a691d964970b
+# ╔═╡ c17bfc57-2d51-493d-9da8-a72b04e5f3bb
 # ╠═╡ disabled = true
 #=╠═╡
 begin
-	save("final_roamm_two_step_b2b.svg", fig_two_step)
-	save("final_roamm_two_step_b2b_heatmap.svg", fig_two_step_heatmap)
+	save("01_ROAMM_standard_decoding.svg", fig_standard)
+	save("01_ROAMM_standard_decoding_heatmap.svg", fig_standard_decoding_heatmap)
+	save("02_ROAMM_rerp_decoding.svg", fig_rerp)
+	save("standard_and_rerp_comparison.svg", fig_comparison)
+	save("02_ROAMM_rerp_decoding_heatmap.svg", fig_rERP_decoding_heatmap)
+	save("03_ROAMM_plain_b2b.svg", fig_plain_b2b)
+	save("03_ROAMM_plain_b2b_heatmap.svg", fig_plain_heatmap)
+	save("05_ROAMM_two_step_b2b.svg", fig_two_step)
+	save("05_ROAMM_two_step_b2b_heatmap.svg", fig_two_step_heatmap)
+	
 end
   ╠═╡ =#
 
@@ -1478,12 +1751,29 @@ begin
     end
 end
 
+# ╔═╡ 28f461e7-4e8c-472a-accc-1afb6cf8d95a
+begin
+	early_b2b = filter(
+    row -> 0.1 <= row.time <= 0.35,
+    scores_two_step
+)
+
+subject_effects = combine(
+    groupby(early_b2b, [:subject, :coefname]),
+    :estimate => mean => :early_mean,
+    :estimate => maximum => :early_peak
+)
+
+sort(subject_effects, [:coefname, :early_mean])
+end
+
 # ╔═╡ Cell order:
 # ╠═e9ce96e4-ca36-11f1-84a8-df0069b540ab
+# ╠═4f8ae38b-5aff-4ab5-b546-9b1e88c1dc85
 # ╠═4001b213-854f-4305-8238-7a1742945c9a
 # ╟─d63e9e0e-1a2a-4832-be56-1a5de5085976
-# ╠═74612582-bead-443b-95b0-d123fbb2bb62
-# ╠═f68010fb-0e8f-442f-96d4-e1b37903be28
+# ╟─74612582-bead-443b-95b0-d123fbb2bb62
+# ╟─f68010fb-0e8f-442f-96d4-e1b37903be28
 # ╟─28c97b20-219b-4913-b147-e4e422a0bca0
 # ╟─75e697c5-db1c-4d53-a95d-9f5615ffd99a
 # ╟─01fcdcce-3ece-45b8-9e25-7101fa06c6bc
@@ -1491,13 +1781,16 @@ end
 # ╟─1f536d81-ad42-4fa7-b5e3-9cc5d430cabd
 # ╟─58460a3e-9c05-46b4-a402-f7f65ed79b15
 # ╟─57b707fc-6089-485a-acfb-139ee57f52ce
-# ╟─2cbf33d9-deea-4479-8f57-147e3b0a7e99
 # ╟─30d5aa98-a963-44ab-bded-24058687f5df
+# ╟─fadd9408-edeb-4b56-bf33-95238fc4adfb
 # ╟─9b318652-6a11-417a-a795-f2c119562e57
 # ╟─2624f753-ee4e-4c04-867f-7e1028045d88
 # ╟─ac49403c-97b7-4628-a4bd-1e57ae8b1863
 # ╟─c8088f5b-18b7-448e-aa08-c8cfb0b34066
 # ╟─e9bf43b8-fb22-4979-ae96-c40717e43f9e
+# ╟─4685dc86-21ec-4a03-ac5f-41f7ba9d46b7
+# ╟─4ea40ee8-fdd7-47c8-8dc5-24d21c6f86d9
+# ╠═f619cfe4-6758-4535-9056-7debf7739312
 # ╟─3503d980-be17-42ef-88cd-eefc4ff429c6
 # ╟─b12bdc36-92da-420a-a0ed-025f24ae3b3f
 # ╟─3e044ac4-b157-4a0a-97d7-8de8049e6c5f
@@ -1508,18 +1801,26 @@ end
 # ╠═c82a398e-8581-455c-b97d-7884f7db39aa
 # ╠═54a711cb-5284-4a0a-8314-3e6cf9dc2bc7
 # ╠═d6e439f9-b27d-4bcd-ae99-e06b061f1264
+# ╠═d8c8e4f3-833c-44cf-9c48-814d42fd87a6
 # ╟─9236fe57-780a-4028-bef6-a90399ef492b
 # ╠═8f43b5ca-8c27-4180-9fbd-975fd881c762
+# ╠═6c9341b3-076c-41a7-99c3-c154aa13e8f5
+# ╠═62b100f0-f9d2-4a2a-964c-86179e9546e6
+# ╠═0e68529d-5fc6-4a16-b151-8558fe9d52bb
+# ╠═6c5b118d-5f09-40ed-9805-d49085dfa0f1
+# ╠═ffcacd1d-38b4-4f34-8f9b-dd90606d7f85
 # ╠═07b34fdd-1e7d-4307-aea3-0098d2f75ce3
+# ╟─c3cec440-5592-4f29-8dcc-c3ce58b3a1d0
+# ╠═d3503f74-b9d5-4ce3-b553-fe647d3e3921
 # ╟─130e150c-a908-4d70-9b1d-356a6009416b
 # ╠═7d93eff2-0bec-4423-8db1-0439527dd2fa
 # ╠═0d646518-4b97-42c6-ac1e-b7c8f9a36df1
-# ╠═6b99c440-4177-45ea-8c12-3c1faa0db6fd
 # ╟─d05990b6-7035-478a-889a-73dd8be464d9
 # ╠═65bd6d0c-7db3-4087-ae5c-33433b67d613
 # ╠═a7da75d3-85af-4c50-a580-a28cdd9b9d6a
 # ╠═7b1ddef0-eacf-4b04-9bbe-c08151b7c1c6
-# ╠═c520c71d-9d96-4883-93ae-a691d964970b
+# ╠═c17bfc57-2d51-493d-9da8-a72b04e5f3bb
 # ╟─7770b6ef-7c84-4d81-a4e9-f35a1b6b0d11
 # ╠═8cfdac79-78da-40c9-9e5d-4ae43bb0cb18
 # ╠═f8aa3617-9110-4d71-bbeb-ee58101f73bf
+# ╠═28f461e7-4e8c-472a-accc-1afb6cf8d95a
