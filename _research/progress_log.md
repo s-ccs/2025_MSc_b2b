@@ -277,7 +277,7 @@ gradually building up:
 - Subject-level outputs are now availble for group-level aggregation and statistical analysis.
 - Inspected and summairzed the subject-level estimates across participants.
 - Started writing the thesis.
-- Drafted analysis decisions: [Summary of evaluation methods](_research/meeting_slides/summary_of_evaluation_methods.pdf)
+- Drafted analysis decisions: [Summary of evaluation methods](/meeting_slides/summary_of_evaluation_methods.pdf)
 
 ### Meeting
 - Meeting moved from evevry Tuesday to Thursday. 
