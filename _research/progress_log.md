@@ -277,87 +277,15 @@ gradually building up:
 - Subject-level outputs are now availble for group-level aggregation and statistical analysis.
 - Inspected and summairzed the subject-level estimates across participants.
 - Started writing the thesis.
-- Drafted analysis decisions: 
+- Drafted analysis decisions: [Summary of evaluation methods](_research/meeting_slides/summary_of_evaluation_methods.pdf)
 
 ### Meeting
 - Meeting moved from evevry Tuesday to Thursday. 
 
 ## 30 Oct 2026
 
-## Current status
 
-## 20 Oct 2026 — ROAMM full-subject analysis
-
-### Progress
-
-#### ROAMM
-
-- Extended the real-data analysis from the initial single-subject tests to the full dataset.
-- Ran the main analysis pipelines across **44 ROAMM subjects**.
-- Current full-subject results are available for **four pipelines**.
-- The one-step FIR + B2B pipeline has not yet been included in the full ROAMM batch because the continuous FIR design is substantially more computationally expensive.
-  - Need to decide whether it is necessary for the final thesis analysis.
-- Subject-level outputs are now available for group-level aggregation and statistical analysis.
-
-#### Predictors
-
-- Continued preparing the lexical predictors for the ROAMM analyses:
-  - word length
-  - Zipf word frequency
-  - GPT-2 surprisal
-- Surprisal is now part of the real-data analysis workflow.
-- Continued checking how lexical information should be associated with fixation events, especially given that neural activity during one fixation may also contain parafoveal processing of neighbouring words.
-
-### Current interpretation
-
-- The main goal of the ROAMM analysis is not to interpret an FRP as the response to exactly one isolated word.
-- Instead, EEG is time-locked to fixation onset, while the lexical predictors describe properties of the currently fixated word.
-- Processing of neighbouring/parafoveal words remains a limitation of this event definition and should be discussed in the thesis.
-
-## 27 Oct 2026 — Final analysis planning and start of thesis writing
-
-### Simulation
-
-- The main simulation analyses are largely complete.
-
-- Results are available for the main overlap × collinearity conditions and for the correlated-continuous-predictor simulation.
-
-- The remaining simulation work is mainly:
-
-  - final sanity checks,
-  - choosing quantitative evaluation measures,
-  - generating final figures,
-  - deciding which exploratory results should be included in the thesis.
-
-- The one-step B2B results remain difficult to interpret:
-
-  - in the correlated-predictor simulation it does not separate the predictors as cleanly as plain B2B and two-step B2B,
-  - it also produces additional bumps whose mechanism is not yet fully understood.
-
-- Since one-step B2B is not currently planned as the main final pipeline, these effects may be treated as secondary/exploratory rather than investigated extensively.
-
-### ROAMM
-
-- Completed the computationally feasible full-subject analyses for **44 subjects**.
-- The next step is no longer basic pipeline implementation, but **group-level evaluation and statistical inference**.
-- Need to inspect and summarize the subject-level estimates across participants.
-- Main unresolved analysis decisions:
-  - statistical test for group-level B2B estimates,
-  - whether to calculate **ΔR** as a complementary measure to S,
-  - whether a separate train/test or held-out evaluation is necessary,
-  - which comparisons between pipelines should form the main thesis result.
-
-### Writing
-
-- Started writing the thesis.
-- Began drafting the **simulation methods** section.
-- Current writing focus:
-  - describe the simulated data and ground truth,
-  - explain temporal overlap and predictor collinearity manipulations,
-  - describe the decoding/B2B pipelines clearly,
-  - avoid adding unnecessary implementation details before the final analysis decisions are fixed.
-
-# Current status — 28 Oct 2026
+# Current status
 
 ## ✅ Implemented / completed
 
