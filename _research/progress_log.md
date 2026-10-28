@@ -241,8 +241,9 @@ gradually building up:
 
 ## 06 Oct 2026 
 
-## Progress
-- Checked the original data, the code used a more sufficient way to define a ridge function, and also applied SVD decompose matrix.
+### Progress
+- Checked the original code, the code used a more sufficient way to define a ridge function, and also applied SVD decompose matrix.
+- Sanity check and quality check of ROAMM data again, especially first-pass reading vs rereading, left and right eye.
 - Due to the time limit, consider just evaluate S as main analysis, delta R as complementary analysis.
 - Limitation found: a fixation contaion multiple information of multiple words.
 
@@ -256,114 +257,231 @@ gradually building up:
 
 
 ## 13 Oct 2026
-1. How to insepect page/fixation boundaries in ROAMM event table
+
+### Progress
+- Extend the real-data analysis from the intial single-subject tests to the full dataset for all the pipelines.
+- Insepected page/fixation boundaries in ROAMM event table, there is no overlapped boundaries.
+- Set up cluster, using HPC, slurm bash scripts
+- concatenated 5 runs in one subjects,  used centerised data
+- Debug pipelines
+- Ran pipelines on cluster
+
+### Meeting
+- DAG, suppessor effect, winsorized mean, logscale
+- Do some research about the statistical test. what should we test, and how shoud we test? 
 
 
+## 20 Oct 2026
+### Progress
+- The one-step B2B has not yet been included because it is computationally expensive.
+- Subject-level outputs are now availble for group-level aggregation and statistical analysis.
+- Inspected and summairzed the subject-level estimates across participants.
+- Started writing the thesis.
+- Drafted analysis decisions: 
+
+### Meeting
+- Meeting moved from evevry Tuesday to Thursday. 
+
+## 30 Oct 2026
 
 ## Current status
 
-### ✅ Implemented
+## 20 Oct 2026 — ROAMM full-subject analysis
 
-#### Simulation / pipelines
-- [x] Simulation: `clean` / `overlap` / `confound` / `both`
+### Progress
+
+#### ROAMM
+
+- Extended the real-data analysis from the initial single-subject tests to the full dataset.
+- Ran the main analysis pipelines across **44 ROAMM subjects**.
+- Current full-subject results are available for **four pipelines**.
+- The one-step FIR + B2B pipeline has not yet been included in the full ROAMM batch because the continuous FIR design is substantially more computationally expensive.
+  - Need to decide whether it is necessary for the final thesis analysis.
+- Subject-level outputs are now available for group-level aggregation and statistical analysis.
+
+#### Predictors
+
+- Continued preparing the lexical predictors for the ROAMM analyses:
+  - word length
+  - Zipf word frequency
+  - GPT-2 surprisal
+- Surprisal is now part of the real-data analysis workflow.
+- Continued checking how lexical information should be associated with fixation events, especially given that neural activity during one fixation may also contain parafoveal processing of neighbouring words.
+
+### Current interpretation
+
+- The main goal of the ROAMM analysis is not to interpret an FRP as the response to exactly one isolated word.
+- Instead, EEG is time-locked to fixation onset, while the lexical predictors describe properties of the currently fixated word.
+- Processing of neighbouring/parafoveal words remains a limitation of this event definition and should be discussed in the thesis.
+
+## 27 Oct 2026 — Final analysis planning and start of thesis writing
+
+### Simulation
+
+- The main simulation analyses are largely complete.
+
+- Results are available for the main overlap × collinearity conditions and for the correlated-continuous-predictor simulation.
+
+- The remaining simulation work is mainly:
+
+  - final sanity checks,
+  - choosing quantitative evaluation measures,
+  - generating final figures,
+  - deciding which exploratory results should be included in the thesis.
+
+- The one-step B2B results remain difficult to interpret:
+
+  - in the correlated-predictor simulation it does not separate the predictors as cleanly as plain B2B and two-step B2B,
+  - it also produces additional bumps whose mechanism is not yet fully understood.
+
+- Since one-step B2B is not currently planned as the main final pipeline, these effects may be treated as secondary/exploratory rather than investigated extensively.
+
+### ROAMM
+
+- Completed the computationally feasible full-subject analyses for **44 subjects**.
+- The next step is no longer basic pipeline implementation, but **group-level evaluation and statistical inference**.
+- Need to inspect and summarize the subject-level estimates across participants.
+- Main unresolved analysis decisions:
+  - statistical test for group-level B2B estimates,
+  - whether to calculate **ΔR** as a complementary measure to S,
+  - whether a separate train/test or held-out evaluation is necessary,
+  - which comparisons between pipelines should form the main thesis result.
+
+### Writing
+
+- Started writing the thesis.
+- Began drafting the **simulation methods** section.
+- Current writing focus:
+  - describe the simulated data and ground truth,
+  - explain temporal overlap and predictor collinearity manipulations,
+  - describe the decoding/B2B pipelines clearly,
+  - avoid adding unnecessary implementation details before the final analysis decisions are fixed.
+
+# Current status — 28 Oct 2026
+
+## ✅ Implemented / completed
+
+### Simulation
+
+- [x] Main condition + continuous simulation
+- [x] `clean` / `overlap` / `confound` / `both` conditions
+- [x] Temporal-overlap manipulation
+- [x] Predictor-collinearity manipulation
 - [x] Standard ridge decoding
 - [x] rERP decoding
 - [x] Plain B2B
 - [x] One-step FIR + B2B
 - [x] Two-step rERP → reconstructed single trials → B2B
-- [x] Plotting and saving results for all five pipelines
-- [x] Sampling-rate control for the default P300 spike
-- [x] Three-correlated-predictor simulation:
-  - Hanning-window components
-  - continuous-1-biased overlap
+- [x] Comparison plots across pipelines
+- [x] Sampling-rate sanity check
+- [x] Three-correlated-continuous-predictor simulation
+- [x] Hanning-window components
+- [x] Predictor-biased overlap
+- [x] Main simulation results generated
 
-#### ROAMM
-- [x] Text → lexical predictors → fixation onset → EEG latency preprocessing
-- [x] Initial EEG sanity checks
-- [x] ROAMM data successfully used as input to two-step B2B
-- [x] Initial subject-level B2B analysis
+### ROAMM preprocessing
 
-#### Methodological decisions / understanding
-- [x] GPT-2 choice justified:
-  - goal is modelling human language processing rather than maximizing
-    next-token prediction accuracy
-  - autoregressive prediction is appropriate for incremental reading
-- [x] Identified potential problems with naive word-level surprisal calculation
-  due to GPT-2 subword tokenization
+- [x] Prepare text
+- [x] Compute word length
+- [x] Compute Zipf frequency
+- [x] Compute GPT-2 surprisal
+- [x] Prepare fixation-level events
+- [x] Merge lexical predictors with fixation events
+- [x] Align fixation events to EEG samples
+- [x] Export synchronized EEG data
+- [x] Initial EEG / FRP sanity checks
 
+### ROAMM analysis
 
+- [x] Single-run analysis
+- [x] Multi-run subject-level analysis
+- [x] Two-step B2B tested successfully on real EEG
+- [x] Full-subject analysis across **44 subjects**
+- [x] Four main pipelines run across subjects
+- [x] Subject-level results saved for group analysis
 
-## Current status
-### 🔍 Open questions
+### Method understanding
 
-#### Simulation / B2B
-- [ ] Why does the Hanning-window simulation appear more decodable?
-  - Is this important enough to investigate further?
+- [x] Understand the basic B2B procedure:
+  - forward model G
+  - backward model H
+  - predictor-recovery matrix S
+- [x] Clarified that B2B S should be interpreted primarily as predictor-recovery / feature-importance strength rather than ERP amplitude.
+- [x] Investigated the role of ridge regularization.
+- [x] Investigated the SVD-based implementation used in the original code.
+- [x] GPT-2 choice justified for modelling incremental human reading.
+- [x] Identified parafoveal / multiple-word processing as a limitation of fixation-locked lexical analyses.
 
-- [ ] Understand `ShiftOnsetByOne`
-  - Why do the overlap-related bumps appear where they do?
-  - Which neighboring event contributes to each bump?
-  - How does shifting the onset-distance assignment move/change the bumps?
+## 🔍 Remaining questions
 
-- [ ] Why does one-step B2B separate the three correlated predictors less
-      cleanly than plain/two-step B2B?
-  - Current hypothesis: strong regularization in the continuous FIR model
-  - Needs verification
+### Simulation
 
-- [ ] How should B2B recovery be numerically evaluated?
-  - B2B estimates and the simulated ERP waveform do not necessarily have
-    the same shape
-  - quantify target recovery and cross-talk across pipelines
+- [ ] Finalize numerical evaluation of recovery.
+- [ ] Decide which quantitative metrics are necessary for the final thesis.
+- [ ] Decide how much of the one-step B2B behaviour needs to be explained.
+- [ ] Finalize figures and figure layout.
+- [ ] Make sure the simulation ground truth and predictor correlations are clearly visualized.
 
-#### ROAMM
-- [ ] What is the appropriate context for surprisal?
-  - sentence-level
-  - story-level / longer preceding context
+### ROAMM
 
-- [ ] How should GPT-2 subword probabilities be converted into word
-      probabilities?
-  - account for tokenization / whitespace issues
+- [ ] Aggregate subject-level results.
+- [ ] Produce group-level figures for the main predictors.
+- [ ] Inspect between-subject variability.
+- [ ] Decide whether one-step B2B needs to be run on the complete ROAMM dataset.
+- [ ] Select the final subset of real-data analyses to present in the thesis.
 
-- [ ] Should fixation events use left-eye, right-eye, or binocular events?
+### Evaluation / statistics
 
-- [ ] EEG scaling:
-  - BIDS metadata reports `µV`
-  - synced `.pkl` / exported `.npy` values are around `1e-5`
-  - determine where scaling occurred upstream
+- [ ] Decide the main statistical test for group-level S.
+- [ ] Decide whether **ΔR** should be included as a complementary analysis.
+- [ ] Decide whether held-out / train-test evaluation is necessary.
+- [ ] If required, implement the minimum train/test analysis.
+- [ ] Define the final comparisons between plain B2B and overlap-corrected B2B.
 
-- [ ] Run EEG quality/sanity checks across all subjects and flag suspicious data
+### Writing
 
-#### Evaluation / statistics
-- [ ] Decide whether ΔR is needed as a complementary analysis to S
-- [ ] Decide on statistical testing for subject-level/group-level S estimates
-- [ ] Decide whether held-out evaluation is necessary
-- [ ] If used, compare plain B2B vs. two-step B2B on held-out ROAMM data
+- [x] Thesis writing started.
+- [ ] Finish simulation Methods.
+- [ ] Write ROAMM dataset and preprocessing Methods.
+- [ ] Write B2B / overlap-correction Methods.
+- [ ] Write simulation Results.
+- [ ] Write ROAMM Results.
+- [ ] Literature review / Introduction.
+- [ ] Discussion.
 
-#### Methods / code understanding
-- [ ] Understand the feature-importance implementation
-  - trace through the code
-  - understand exactly what quantity is estimated, SVD
-  - determine how it should be interpreted
+## 🚩 Immediate priorities
 
+1. **Finalize the statistical-analysis plan**
 
-### 🚩 Immediate priorities
+   - Ask about the group-level statistical test.
+   - Decide whether ΔR is necessary.
+   - Decide whether train/test evaluation is necessary.
 
-1. **Recalculate word surprisal**
-   - decide context definition
-   - implement tokenization-aware word probability
+2. **Finish the minimum remaining analyses**
 
-2. **Run two-step B2B on ROAMM**
-   - word length
-   - word frequency
-   - word surprisal
+   - implement the agreed statistical test,
+   - implement ΔR / held-out evaluation only if needed,
+   - avoid adding large exploratory analyses unless they directly contribute to the thesis.
 
-3. **Obtain and inspect subject-level S estimates**
+3. **Aggregate the 44-subject ROAMM results**
 
-4. **Run EEG sanity checks across subjects**
+   - group mean,
+   - subject variability,
+   - main predictor effects,
+   - pipeline comparison.
 
-5. **Then decide on evaluation/statistics**
-   - ΔR?
-   - statistical test?
+4. **Freeze the simulation analysis**
+
+   - final checks,
+   - final metrics,
+   - final figures.
+   - Avoid further simulation expansion unless a result cannot otherwise be justified.
+
+5. **Continue writing in parallel**
+
+   - finish the simulation Methods first,
+   - then ROAMM Methods,
+   - write Results as soon as each analysis is frozen.
 
 
 
@@ -441,6 +559,10 @@ gradually building up:
 > │   │   ├── CorrelatedContinuousSim.jl  
 > │   ├── MScB2B.jl                                # main module of the custom MScB2B package
 >```
+
+
+
+
 
 
 
