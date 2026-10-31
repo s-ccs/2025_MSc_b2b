@@ -85,7 +85,12 @@ function calculate_b2b_R(
 	# dat: channels x timepoints x trials
 
 	n_trials, n_preds = size(X)
-	n_times = size(dat, 2)
+	n_channels, n_times, n_epochs = size(dat)
+
+	@assert n_trials == n_epochs
+	@assert length(times) == n_times
+	@assert nfolds >= 2
+	@assert cross_val_reps >= 1
 
 	folds = UnfoldDecode.MLJBase.train_test_pairs(
 		UnfoldDecode.MLJBase.CV(
@@ -102,21 +107,28 @@ function calculate_b2b_R(
 	for (fold_idx, (train_idx, test_idx)) in enumerate(folds)
 
 		println("Outer fold $fold_idx / $(length(folds))")
-		rep_R = fill(NaN, cross_val_reps, n_times, n_preds)
 
-		for rep in 1:cross_val_reps
+		@assert isempty(intersect(train_idx, test_idx))
+
+		for t in 1:n_times
+
+			# trials x channels
+			Y = Matrix(permutedims(dat[:, t, :]))
+
+			# Ensemble coefficients
+			G_mean = zeros(n_channels, n_preds)
+			H_mean = zeros(n_preds, n_preds)
+			
+
+			for rep in 1:cross_val_reps
 			# Internal B2B split: training trials only
-			rng = MersenneTwister(seed + 1000 * fold_idx + rep)
-			shuffled = shuffle(rng, collect(train_idx))
-			mid = fld(length(shuffled, 2))
+				rng = MersenneTwister(seed + 1000 * fold_idx + rep)
+				shuffled = shuffle(rng, collect(train_idx))
+				mid = fld(length(shuffled, 2))
 
-			idx_G = shuffled[1:mid]
-			idx_H = shuffled[mid+1:end]
-
-			for t in 1:n_times
-				
-				# EEG: trials x channels
-				Y = Matrix(permutedims(dat[:, t, :]))
+				idx_G = shuffled[1:mid]
+				idx_H = shuffled[mid+1:end]
+	
 
 				# Stage 1: EEG -> predictors
 				G = UnfoldDecode.model_ridge(
@@ -134,39 +146,41 @@ function calculate_b2b_R(
 				)
 
 				# Evaluate on independent outer test trials
-				XH_test = X[test_idx, :] * H
-				YG_test = Y[test_idx, :] * G
-
-				# Skip the intercept: column 1
-				for i in 2:n_preds
-					a = XH_test[:, i]
-					b = YG_test[:, i]
-					if std(a) > 1e-12 && std(b) > 1e-12
-						rep_R[rep, t, i] = cor(a, b)
-					end
-				end
+				G_mean .+= G
+				H_mean .+= H
 			end
-		end
 
-		# Mean across outer folds
-		R = fill(NaN, n_times, n_preds)
+			G_mean ./= cross_val_reps
+			H_mean ./= cross_val_reps
 
-		for t in 1:n_times, i in 2:n_preds
-			vals = filter(isfinite, fold_R[:, t, i])
-			if !isempty(vals)
-				fold_R[fold_idx, t, i] = mean(vals)
+			# Independent test-set predictions
+			YG_test = Y[test_idx, :] * G_mean
+			XH_test = X[test_idx, :] * H_mean
+
+			# Predictor-wise Pearson correlation
+			# Skip intercept in column 1
+			for i in 2:n_preds
+				a = XH_test[:, i]
+				b = YG_test[:, i]
+
+				if std(a) > 1e-12 && std(b) > 1e-12
+					fold_R[fold_idx, t, i] = cor(a, b)
+				end
 			end
 		end
 	end
 
 	# Mean across outer folds
 	R = fill(NaN, n_times, n_preds)
+
 	for t in 1:n_times, i in 2:n_preds
 		vals = filter(isfinite, fold_R[:, t, i])
 		if !isempty(vals)
 			R[t, i] = mean(vals)
 		end
 	end
+	
+
 	return(
 		R = R,
 		fold_R = fold_R,
