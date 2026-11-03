@@ -22,3 +22,26 @@ function fit_plain_b2b_roamm(
         solver = solver
     )
 end 
+
+function predictive_evaluate_plain_b2b_roamm(
+    dat,
+    evts,
+    times;
+    nfolds::Int = 5,
+    cross_val_reps::Int = 5,
+    scaling:: Symbol = :center,
+    seed::Int = 12
+)
+    predictors = [:word_length, :frequency_zipf, :word_surprisal]
+    X_raw = Matrix{Float64}(evts[:, predictors])
+
+    return calculate_b2b_R(
+        X_raw,
+        dat,
+        times;
+        nfolds = nfolds,
+        cross_val_reps = cross_val_reps,
+        scaling = scaling,
+        seed = seed
+    )
+end 

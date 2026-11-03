@@ -1,9 +1,9 @@
 function _prepare_fold_predictors(X_raw, train_idx; scaling = :center)
-	μ = mean(X_raw[train_idx, :], dims = 1)
+	μ = mean(X_raw[train_idx, :], dims = 1) # select the training rows and kepp all columns
 
 	if scaling == :center
 		X_scaled = X_raw .- μ
-	else scaling == :zscore
+	elseif scaling == :zscore
 		σ = std(X_raw[train_idx, :], dims = 1)
 		X_scaled = (X_raw .- μ) ./ σ
 	end
@@ -17,7 +17,7 @@ function _make_internal_splits(train_idx; cross_val_reps = 5, seed = 12)
 	for rep in 1: cross_val_reps
 		rng = MersenneTwister(seed + rep)
 		shuffled = shuffle(rng, collect(train_idx))
-		mid = fld(length(shuffled), 2)
+		mid = fld(length(shuffled), 2) # floor division
 
 		idx_G = shuffled[1:mid]
 		idx_H = shuffled[mid+1:end]
@@ -35,10 +35,7 @@ function _fit_b2b(X, Y, internal_splits)
 	# ensembel coefficients
 	G_mean = zeros(n_channels, n_preds)
 	H_mean = zeros(n_preds, n_preds)
-	# Knockout H for every predictor
-	H_ko_mean = zeros(n_preds, n_preds, n_preds)
 
-	# repeated b2b estimation
 	for (idx_G, idx_H) in internal_splits
 		G = UnfoldDecode.model_ridge(Y[idx_G, :], X[idx_G, :])
 		Y2G = Y[idx_H, :] * G
@@ -46,20 +43,11 @@ function _fit_b2b(X, Y, internal_splits)
 
 		G_mean .+= G
 		H_mean .+= H
-
-		# Knockout models
-		for i in 2:n_preds
-			X_H_ko = copy(X[idx_H, :])
-			X_H_ko[:, i] .= 0
-
-			H_ko = UnfoldDecod.model_ridge(X_H_ko, Y2G)
-			H_ko_mean[:, :, i] .+= H_ko
-		end
 	end
+
 	return (
 		G = G_mean ./ n_reps,
-		G = H_mean ./ n_reps,
-		H_knockout = H_ko_mean ./ n_reps
+		H = H_mean ./ n_reps
 	)
 end
 
@@ -68,7 +56,6 @@ function _r_scores(X_test, Y_test, models)
 
 	R = fill(NaN, n_preds)
 	R_knockout = fill(NaN, n_preds)
-	delta_R = fill(NaN, n_preds)
 
 	YG = Y_test * models.G
 	XH = X_test * models.H
@@ -77,22 +64,20 @@ function _r_scores(X_test, Y_test, models)
 		y_decoded = YG[:, i]
 		x_reconstructed = XH[:, i]
 
+		# Full reconstruction
 		R[i] = cor(x_reconstructed, y_decoded)
 
-		# evaluate knockout model
-		X_ko = copy(X_test)
-		X_ko[:, i] .= 0
+		# Knockout: set predictor i to zero, keep H fixed
+		X_test_ko = copy(X_test)
+		X_test_ko[:, i] .= 0
 
-		H_ko = models.H_knockout[:, :, i]
-		x_ko = (X_ko * H_ko)[:, i]
-
-		R_knockout[i] = cor(x_ko, y_decoded)
-		delta_R[i] = R[i] - R_knockout[i]
+		x_reconstructed_ko = (X_test_ko * models.H)[:, i]
+		R_knockout[i] = cor(x_reconstructed_ko, y_decoded)
 	end
 	return (
 		R = R, 
 		R_knockout = R_knockout,
-		delta_R = delta_R
+		delta_R = R .- R_knockout
 	)
 end
 
@@ -108,9 +93,9 @@ function calculate_b2b_R(
 	# X_raw: trials x predictors, no intercept
 	# dat: channels x timepoints x trials
 
-	n_trials, n_preds = size(X_raw)
+	n_trials, n_predictors = size(X_raw)
 	n_channels, n_times, n_epochs = size(dat)
-	n_preds = n_predictors + 1
+	n_preds = n_predictors + 1 # Including intercept
 
 	@assert n_trials == n_epochs
 	@assert length(times) == n_times
