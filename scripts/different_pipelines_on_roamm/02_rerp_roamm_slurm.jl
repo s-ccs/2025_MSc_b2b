@@ -8,6 +8,9 @@ using CSV, DataFrames
 using Serialization
 using Dates
 using LinearAlgebra
+using MLJ
+using MLJLinearModels: RidgeRegressor
+using UnfoldDecode
 
 LinearAlgebra.BLAS.set_num_threads(1)
 
@@ -18,11 +21,11 @@ events_path = "/home/st/st_us-051900/st_st181570/data/ROAMM/outputs/preprocessin
 #events_path = "/scratch/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
 
 PROJECT_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm", "rerp")
+models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm", "rerp_rms_inner5")
 mkpath(models_dir)
 
 PREDICTORS = [:word_length, :frequency_zipf, :word_surprisal]
-INNER_NFOLDS = 3
+INNER_NFOLDS = 5
 OUTER_NFOLDS = 5
 RESOLUTION = 10
 SCALING = :center
@@ -46,8 +49,16 @@ for subject in subjects
     evts[!, :event] = fill("fixation", nrow(evts))
 
     # 3. Tuned ridge model
-    model = MScB2B.make_ridge_tuned_model(inner_nfolds = INNER_NFOLDS, resolution = RESOLUTION)
+    # model = MScB2B.make_ridge_tuned_model(inner_nfolds = INNER_NFOLDS, resolution = RESOLUTION)
+    model = UnfoldDecode.tunemodel(
+        RidgeRegressor(fit_intercept = false);
+        nfolds = INNER_NFOLDS,
+        resolution = RESOLUTION,
+        measure = MLJ.rms
+    )
 
+    @show model.model
+    @show model.measure
     # Decode each predictor
     result = MScB2B.fit_rerp_decoding_roamm(
         eeg,
