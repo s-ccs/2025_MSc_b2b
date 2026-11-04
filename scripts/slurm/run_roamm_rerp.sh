@@ -5,10 +5,10 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=64G
-#SBATCH --time=24:00:00
-#SBATCH --output=slurm_results/logs/roamm/rerp/roamm_rerp_%A_%a.log
-#SBATCH --error=slurm_results/logs/roamm/rerp/roamm_rerp_%A_%a.log
+#SBATCH --mem=128G
+#SBATCH --time=36:00:00
+#SBATCH --output=slurm_results/logs/roamm/rerp_rms_inner5/roamm_rerp_%A_%a.log
+#SBATCH --error=slurm_results/logs/roamm/rerp_rms_inner5/roamm_rerp_%A_%a.log
 
 set -e
 

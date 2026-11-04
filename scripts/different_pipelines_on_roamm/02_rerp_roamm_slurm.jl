@@ -37,7 +37,7 @@ task_id = parse(Int, ENV["SLURM_ARRAY_TASK_ID"])
 subjects = [subjects[task_id]]
 
 for subject in subjects
-    result_path = joinpath(models_dir, "$(subject)_$(SCALING)_roamm_rerp_decoding.jls")
+    result_path = joinpath(models_dir, "$(subject)_$(SCALING)_roamm_rerp_decoding_rms_inner5.jls")
     isfile(result_path) && (println("SKIPPED: $subject"); continue)
 
     t0 = time()
