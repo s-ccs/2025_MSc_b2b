@@ -96,3 +96,73 @@ function fit_two_step_b2b_roamm(
 		b2b_fit_corrected = uf_two_step_b2b
 	)
 end
+
+function predictive_evaluate_two_step_b2b_roamm(
+	dat_cont,
+	evts;
+	predictors::Vector{Symbol} = [
+		:word_length,
+		:frequency_zipf,
+		:word_surprisal
+		],
+		sfreq::Float64 = 256.0,
+		nfolds::Int = 5,
+		cross_val_reps::Int = 5,
+		scaling::Symbol = :center,
+		seed::Int = 12
+)
+	evts = copy(evts)
+	sort!(evts, :latency)
+	evts[!, :event] = fill("stimulus", nrow(evts))
+
+	# 1. Prepare rERP design
+	model_predictors = _prepare_predictors!(evts, predictors; scaling = scaling)
+
+	formula = _make_formula(model_predictors)
+
+	design_rerp = [
+		"stimulus" => (
+			formula,
+			Unfold.firbasis(
+				τ = [-0.1, 1.0],
+				sfreq = sfreq
+			))]
+
+	# 2. Fit rERP model
+	uf_rerp = Unfold.fit(
+		UnfoldLinearModelContinuousTime,
+		design_rerp,
+		evts,
+		dat_cont;
+		eventcolumn = :event,
+		show_progress = false
+	)
+
+	# 3. Recover single_trial corrected responses
+	corrected_trials = UnfoldDecode.singletrials(
+		dat_cont,
+		uf_rerp,
+		evts,
+		"stimulus",
+		:event
+	)
+
+	times = Unfold.times(uf_rerp)[1]
+	
+	# Remove incomplete epochs and corresponding events
+	evts_valid, corrected_trials = Unfold.drop_missing_epochs(evts, corrected_trials)
+
+	# 4. Prepare trial-level B2B design
+	X_raw = Matrix{Float64}(evts_valid[:, predictors])
+
+	# 5. Calculate B2B R²
+	return calculate_b2b_R(
+		X_raw,
+		corrected_trials,
+		times;
+		nfolds = nfolds,
+		cross_val_reps = cross_val_reps,
+		scaling = scaling,
+		seed = seed
+	)
+end 
