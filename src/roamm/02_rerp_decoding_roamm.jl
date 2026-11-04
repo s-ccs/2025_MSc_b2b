@@ -1,7 +1,13 @@
 function fit_rerp_decoding_roamm(
     eeg,
     evts;
-    model = make_ridge_tuned_model(),
+    # model = make_ridge_tuned_model(),
+    model = UnfoldDecode.tunemodel(
+        RidgeRegressor(fit_intercept = false);
+        nfolds = 5,
+        resolution = 10,
+        measure = MLJ.rms
+    ),
     targets = (:word_length, :frequency_zipf, :word_surprisal),
     nfolds::Int = 5, 
     sfreq::Float64 = 256.0,
