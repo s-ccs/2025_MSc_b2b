@@ -27,7 +27,7 @@ mkpath(logs_dir)
 PREDICTORS = [:word_length, :frequency_zipf, :word_surprisal]
 CROSS_VAL_REPS = 5
 SCALING = :center
-OUTRTER_NFOLDS = 5
+OUTER_NFOLDS = 5
 SEED = 12
 SFREQ = 256.0
 
@@ -59,7 +59,7 @@ open(log_path, "a") do log
             evts[!, :event] = fill("fixation", nrow(evts))
             n_samples = size(eeg, 2)
             n_fixations = nrow(evts)
-            logmsg("DATA: $subject | Epochs: $(nrow(evts_epoched)) | EEG size: $(size(dat_epoched))")
+            logmsg("DATA: $subject | Fixations: $n_fixations | Samples: $n_samples")
 
 
             # Decode each predictor
@@ -90,7 +90,7 @@ open(log_path, "a") do log
         
             mv(temp_path, result_path; force = true)
             elapsed = round(time() - t0; digits = 2)
-            logmsg("SUCCESS: $subject | Epochs: $(size(dat_epoched, 3)) | Time: $(elapsed)s")
+            logmsg("SUCCESS: $subject | Fixations: $n_fixations | Time: $(elapsed)s")
 
         catch err 
             logmsg("FAILED: $subject")

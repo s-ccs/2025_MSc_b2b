@@ -148,14 +148,15 @@ function predictive_evaluate_two_step_b2b_roamm(
 	)
 
 	times = Unfold.times(uf_rerp)[1]
-	
-	# Remove incomplete epochs and corresponding events
-	evts_valid, corrected_trials = Unfold.drop_missing_epochs(evts, corrected_trials)
+
 
 	# 4. Prepare trial-level B2B design
-	X_raw = Matrix{Float64}(evts_valid[:, predictors])
+	X_raw = Matrix{Float64}(evts[:, predictors])
 
-	# 5. Calculate B2B R²
+	X_raw, corrected_trials = Unfold.drop_missing_epochs(X_raw, corrected_trials)
+	@assert size(X_raw, 1) == size(corrected_trials, 3)
+
+	# 5. Calculate B2B R
 	return calculate_b2b_R(
 		X_raw,
 		corrected_trials,

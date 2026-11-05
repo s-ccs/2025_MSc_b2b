@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v1.0.4
+# v0.20.21
 
 using Markdown
 using InteractiveUtils
@@ -25,8 +25,8 @@ md"""
 
 # ╔═╡ 74612582-bead-443b-95b0-d123fbb2bb62
 begin
-	base_dir = "/home/st/st_us-051900/st_st181570/2025_MSc_b2b/slurm_results/models/roamm"
-	#base_dir = "/store/users/xu/2025_MSc_b2b/slurm_results/models/roamm"
+	#base_dir = "/home/st/st_us-051900/st_st181570/2025_MSc_b2b/slurm_results/models/roamm"
+	base_dir = "/store/users/xu/2025_MSc_b2b/slurm_results/models/roamm"
 	
 	readdir(base_dir)
 end
@@ -1538,9 +1538,11 @@ md"""
 
 # ╔═╡ 8f43b5ca-8c27-4180-9fbd-975fd881c762
 begin
-    scores_rerp = load_roamm_decoding_scores(
-        joinpath("/home/st/st_us-051900/st_st181570/2025_MSc_b2b/slurm_results/models/roamm/rerp")
-    )
+    #scores_rerp = load_roamm_decoding_scores(
+        #joinpath("/home/st/st_us-051900/st_st181570/2025_MSc_b2b/slurm_results/models/roamm/rerp")
+   #)
+	scores_rerp = load_roamm_decoding_scores(joinpath(
+	"/store/users/xu/2025_MSc_b2b/slurm_results/models/roamm/rerp_without_centering"))
 
     summary_rerp = summarize_decoding(scores_rerp)
 
@@ -1767,6 +1769,606 @@ subject_effects = combine(
 sort(subject_effects, [:coefname, :early_mean])
 end
 
+# ╔═╡ f00cbae8-7d08-4e6a-bcdb-22485c8f6800
+md"""
+# Evaluation
+"""
+
+# ╔═╡ 2315921f-d530-4e1e-ae3e-dfb42b6d485f
+begin
+	evaluation_dir = joinpath("/store/users/xu/2025_MSc_b2b/slurm_results/models/roamm/plain_b2b_evaluation"
+	)
+	
+	files = filter(
+	    f -> endswith(f, ".jls"),
+	    readdir(evaluation_dir; join=true)
+	)
+	
+	println("Number of subjects: ", length(files))
+	
+	data_evaluation = deserialize(first(files))
+	evaluation = data_evaluation.evaluation
+	
+@show data_evaluation.subject
+@show size(evaluation.R)
+@show size(evaluation.R_knockout)
+@show size(evaluation.delta_R)
+@show length(evaluation.times)
+end
+
+# ╔═╡ fdf9adf2-fbd0-422f-a5f6-5c06fae2698f
+let
+    fig_plain_b2b = Figure(size=(900, 450))
+
+    ax_plain_b2b = Axis(
+        fig_plain_b2b[1, 1],
+        xlabel = "Time (s)",
+        ylabel = "Held-out R",
+        title = "Plain B2B — $(data_evaluation.subject)"
+    )
+
+    predictor_labels = ["Word length", "Frequency", "Surprisal"]
+
+    for (i, predictor) in enumerate(predictor_labels)
+        lines!(
+            ax_plain_b2b,
+            evaluation.times,
+            evaluation.R[:, i + 1],
+            label = predictor,
+            linewidth = 2
+        )
+    end
+
+    vlines!(ax_plain_b2b, [0.0], color=:black, linestyle=:dash)
+    hlines!(ax_plain_b2b, [0.0], color=:gray, linestyle=:dot)
+
+    axislegend(ax_plain_b2b)
+
+    fig_plain_b2b
+end
+
+# ╔═╡ d53395fa-be79-48bf-bb5c-d751c85837ff
+let
+    # Load all subjects
+    all_results = [
+        deserialize(f).evaluation
+        for f in files
+    ]
+
+    times = all_results[1].times
+    n_subjects = length(all_results)
+
+    # Check dimensions
+    @assert all(r -> r.times ≈ times, all_results)
+    @assert all(r -> size(r.R) == size(all_results[1].R), all_results)
+
+    # subjects × time × predictors
+    R_all = cat(
+        [reshape(r.R, 1, size(r.R)...) for r in all_results]...;
+        dims = 1
+    )
+
+    # Mean across subjects, ignoring NaN
+    finite_mean(x) = begin
+        valid = filter(isfinite, x)
+        isempty(valid) ? NaN : mean(valid)
+    end
+
+    R_mean = [
+        finite_mean(R_all[:, t, p])
+        for t in eachindex(times), p in 1:size(R_all, 3)
+    ]
+
+    # Plot
+    fig = Figure(size = (900, 450))
+
+    ax = Axis(
+        fig[1, 1],
+        xlabel = "Time (s)",
+        ylabel = "Mean held-out R",
+        title = "Plain B2B — Group average (n=$n_subjects)"
+    )
+
+    predictors = ["Word length", "Frequency", "Surprisal"]
+
+    for (i, predictor) in enumerate(predictors)
+        lines!(
+            ax,
+            times,
+            R_mean[:, i + 1],  # Skip intercept
+            label = predictor,
+            linewidth = 2
+        )
+    end
+
+    vlines!(ax, [0.0], color = :black, linestyle = :dash)
+    hlines!(ax, [0.0], color = :gray, linestyle = :dot)
+
+    axislegend(ax)
+
+    fig
+end
+
+# ╔═╡ 563bc873-83ce-4bf9-b535-c394999474cf
+function plot_standard_vs_plain_b2b(scores_standard, scores_b2b)
+
+    targets = ["word_length", "frequency_zipf", "word_surprisal"]
+    titles = ["Word length", "Zipf frequency", "Word surprisal"]
+
+    # Match subjects
+    subjects = intersect(
+        string.(unique(scores_standard.subject)),
+        string.(unique(scores_b2b.subject))
+    )
+
+    @info "Matched subjects" n = length(subjects)
+    isempty(subjects) && error("No matching subjects found")
+
+    function summarize_matched(df)
+        matched = filter(
+            row -> string(row.subject) in subjects, df
+        )
+
+        # Average repeated observations within each subject/time
+        subject_mean = combine(
+            groupby(matched, [:subject, :target, :time]),
+            :r => mean => :r
+        )
+
+        # Group average
+        combine(
+            groupby(subject_mean, [:target, :time]),
+            :r => (x -> winsorized_mean(
+                filter(isfinite, collect(skipmissing(x)));
+                proportion = 0.2
+            )) => :mean_r
+        )
+    end
+
+    standard_mean = summarize_matched(scores_standard)
+    b2b_mean = summarize_matched(scores_b2b)
+
+    fig = Figure(size = (1500, 460))
+    colgap!(fig.layout, 35)
+
+    for (i, target) in enumerate(targets)
+
+        ax = Axis(
+            fig[1, i],
+            title = titles[i],
+            xlabel = "Time relative to fixation onset (s)",
+            ylabel = i == 1 ? "Correlation" : "",
+            xticks = -0.1:0.2:1.0,
+            yticklabelsvisible = i == 1,
+            topspinevisible = false,
+            rightspinevisible = false,
+            xgridvisible = false,
+            ygridvisible = false
+        )
+
+        std = sort(
+            standard_mean[standard_mean.target .== target, :],
+            :time
+        )
+
+        b2b = sort(
+            b2b_mean[b2b_mean.target .== target, :],
+            :time
+        )
+
+        lines!(
+            ax, std.time, std.mean_r;
+            color = "#0072B2",
+            linewidth = 3,
+            label = "Standard decoding (r)"
+        )
+
+        lines!(
+            ax, b2b.time, b2b.mean_r;
+            color = "#D55E00",
+            linewidth = 3,
+            label = "Plain B2B (R)"
+        )
+
+        vlines!(ax, [0.0],
+            color = (:black, 0.5),
+            linestyle = :dash
+        )
+
+        hlines!(ax, [0.0],
+            color = (:gray, 0.4),
+            linestyle = :dash
+        )
+
+        xlims!(ax, -0.1, 1.0)
+
+        if i == 1
+            axislegend(ax, position = :rt, framevisible = false)
+        end
+    end
+
+    Label(
+        fig[0, 1:3],
+        "ROAMM — Standard decoding vs Plain B2B (N = $(length(subjects)))",
+        fontsize = 22,
+        font = :bold
+    )
+
+    return fig
+end
+
+# ╔═╡ a0c020bc-b3d0-4526-b566-463aee2266ea
+b2b_evaluation_scores = let
+    targets = ["word_length", "frequency_zipf", "word_surprisal"]
+
+    rows = DataFrame(
+        subject = String[],
+        target = String[],
+        time = Float64[],
+        r = Float64[]
+    )
+
+    for file in files
+        data = deserialize(file)
+        ev = data.evaluation
+
+        for (i, target) in enumerate(targets)
+            for t in eachindex(ev.times)
+                push!(rows, (
+                    string(data.subject),
+                    target,
+                    Float64(ev.times[t]),
+                    Float64(ev.R[t, i + 1])
+                ))
+            end
+        end
+    end
+
+    rows
+end
+
+# ╔═╡ 6d2a9f0c-9375-4d32-9200-f51e6b8d6a3e
+fig_standard_vs_b2b = plot_standard_vs_plain_b2b(
+    scores_standard_decoding,
+    b2b_evaluation_scores
+)
+
+# ╔═╡ b28e292f-e688-4db7-b30b-1a0e33fc2501
+function load_b2b_evaluation_scores(results_dir; metric=:R)
+    files = filter(
+        f -> endswith(f, ".jls"),
+        readdir(results_dir; join=true)
+    )
+
+    isempty(files) && error("No evaluation files in $results_dir")
+
+    targets = ["word_length", "frequency_zipf", "word_surprisal"]
+
+    rows = DataFrame(
+        subject = String[],
+        target = String[],
+        time = Float64[],
+        r = Float64[]
+    )
+
+    for file in files
+        data = deserialize(file)
+        ev = data.evaluation
+
+        values = getproperty(ev, metric)
+
+        @assert size(values, 1) == length(ev.times)
+        @assert size(values, 2) == length(targets) + 1
+
+        for (i, target) in enumerate(targets)
+            for t in eachindex(ev.times)
+                push!(rows, (
+                    string(data.subject),
+                    target,
+                    Float64(ev.times[t]),
+                    Float64(values[t, i + 1])
+                ))
+            end
+        end
+    end
+
+    return rows
+end
+
+# ╔═╡ f43162ae-f581-4c75-9207-747f314a6900
+begin
+    scores_plain_R = load_b2b_evaluation_scores(
+        joinpath(base_dir, "plain_b2b_evaluation")
+    )
+
+    scores_two_step_R = load_b2b_evaluation_scores(
+        joinpath(base_dir, "two_step_b2b_evaluation")
+    )
+
+    @show length(unique(scores_plain_R.subject))
+    @show length(unique(scores_two_step_R.subject))
+end
+
+# ╔═╡ 3e4d7940-1e6f-4f7d-848a-29e6d88e8114
+function plot_four_pipeline_R(
+    scores_standard,
+    scores_rerp,
+    scores_plain,
+    scores_two_step
+)
+    targets = ["word_length", "frequency_zipf", "word_surprisal"]
+    titles = ["Word length", "Zipf frequency", "Word surprisal"]
+
+    # Match subjects present in all four pipelines
+    subjects = reduce(intersect, [
+        Set(string.(unique(df.subject)))
+        for df in (scores_standard, scores_rerp, scores_plain, scores_two_step)
+    ])
+
+    isempty(subjects) && error("No subjects shared by all four pipelines")
+
+    @info "Matched subjects" n=length(subjects)
+
+    # Summarize matched subjects using your existing winsorized_mean
+    function summarize_matched(df)
+        matched = filter(
+            row -> string(row.subject) in subjects,
+            df
+        )
+
+        subject_mean = combine(
+            groupby(matched, [:subject, :target, :time]),
+            :r => mean => :r
+        )
+
+        combine(
+            groupby(subject_mean, [:target, :time]),
+            :r => (x -> begin
+                v = filter(isfinite, collect(skipmissing(x)))
+                isempty(v) ? NaN :
+                    winsorized_mean(v; proportion=0.2)
+            end) => :mean_r
+        )
+    end
+
+    summaries = [
+        summarize_matched(df)
+        for df in (scores_standard, scores_rerp, scores_plain, scores_two_step)
+    ]
+
+    labels = [
+        "Standard decoding (r)",
+        "rERP decoding (r)",
+        "Plain B2B (R)",
+        "Two-step B2B (R)"
+    ]
+
+    colors = [
+        "#0072B2",
+        "#D55E00",
+        "#009E73",
+        "#CC79A7"
+    ]
+
+    fig = Figure(size=(1500, 480))
+    colgap!(fig.layout, 35)
+
+    for (i, target) in enumerate(targets)
+
+        ax = Axis(
+            fig[1, i],
+            title = titles[i],
+            xlabel = "Time relative to fixation onset (s)",
+            ylabel = i == 1 ? "Correlation" : "",
+            xticks = -0.1:0.2:1.0,
+            topspinevisible = false,
+            rightspinevisible = false,
+            xgridvisible = false,
+            ygridvisible = false
+        )
+
+        for j in 1:4
+            sm = sort(
+                summaries[j][summaries[j].target .== target, :],
+                :time
+            )
+
+            lines!(
+                ax,
+                sm.time,
+                sm.mean_r,
+                color = colors[j],
+                linewidth = 2.5,
+                label = labels[j]
+            )
+        end
+
+        vlines!(ax, [0.0],
+            color = (:black, 0.5),
+            linestyle = :dash
+        )
+
+        hlines!(ax, [0.0],
+            color = (:gray, 0.4),
+            linestyle = :dash
+        )
+
+        xlims!(ax, -0.1, 1.0)
+    end
+
+    Legend(
+        fig[2, 1:3],
+        fig.content[1],
+        orientation = :horizontal,
+        framevisible = false
+    )
+
+    Label(
+        fig[0, 1:3],
+        "ROAMM — Four-pipeline comparison (N = $(length(subjects)))",
+        fontsize = 22,
+        font = :bold
+    )
+
+    return fig
+end
+
+# ╔═╡ 7817d72b-58f5-4365-be29-ef49e3bde67d
+fig_four_pipeline = plot_four_pipeline_R(
+    scores_standard_decoding,
+    scores_rerp,
+    scores_plain_R,
+    scores_two_step_R
+)
+
+# ╔═╡ 67cb4228-0554-4b69-903c-09e31f02d3e0
+md"""
+# knoct-out delta -R
+"""
+
+# ╔═╡ 9cf05984-19f2-4aa2-8822-81a64d5933e4
+begin
+    scores_plain_delta = load_b2b_evaluation_scores(
+        joinpath(base_dir, "plain_b2b_evaluation");
+        metric = :delta_R
+    )
+
+    scores_two_step_delta = load_b2b_evaluation_scores(
+        joinpath(base_dir, "two_step_b2b_evaluation");
+        metric = :delta_R
+    )
+
+    @show length(unique(scores_plain_delta.subject))
+    @show length(unique(scores_two_step_delta.subject))
+end
+
+# ╔═╡ 5919eb8c-0a87-486a-9227-0db91428a542
+
+function plot_plain_vs_two_step_delta(
+    scores_plain,
+    scores_two_step
+)
+    targets = ["word_length", "frequency_zipf", "word_surprisal"]
+    titles = ["Word length", "Zipf frequency", "Word surprisal"]
+
+    # Subjects shared by both methods
+    subjects = intersect(
+        string.(unique(scores_plain.subject)),
+        string.(unique(scores_two_step.subject))
+    )
+
+    isempty(subjects) && error("No matching subjects found")
+
+    function summarize_matched(df)
+        matched = filter(
+            row -> string(row.subject) in subjects,
+            df
+        )
+
+        # One value per subject, predictor and time
+        subject_mean = combine(
+            groupby(matched, [:subject, :target, :time]),
+            :r => mean => :r
+        )
+
+        # Group-level winsorized mean
+        combine(
+            groupby(subject_mean, [:target, :time]),
+            :r => (x -> begin
+                v = filter(isfinite, collect(skipmissing(x)))
+                isempty(v) ? NaN :
+                    winsorized_mean(v; proportion=0.2)
+            end) => :delta_mean
+        )
+    end
+
+    plain_mean = summarize_matched(scores_plain)
+    two_step_mean = summarize_matched(scores_two_step)
+
+    fig = Figure(size = (1500, 460))
+    colgap!(fig.layout, 35)
+
+    for (i, target) in enumerate(targets)
+        ax = Axis(
+            fig[1, i],
+            title = titles[i],
+            xlabel = "Time relative to fixation onset (s)",
+            ylabel = i == 1 ? "ΔR" : "",
+            xticks = -0.1:0.2:1.0,
+            topspinevisible = false,
+            rightspinevisible = false,
+            xgridvisible = false,
+            ygridvisible = false
+        )
+
+        plain = sort(
+            plain_mean[plain_mean.target .== target, :],
+            :time
+        )
+
+        two_step = sort(
+            two_step_mean[two_step_mean.target .== target, :],
+            :time
+        )
+
+        lines!(
+            ax,
+            plain.time,
+            plain.delta_mean;
+            color = "#0072B2",
+            linewidth = 3,
+            label = "Plain B2B"
+        )
+
+        lines!(
+            ax,
+            two_step.time,
+            two_step.delta_mean;
+            color = "#D55E00",
+            linewidth = 3,
+            label = "Two-step B2B"
+        )
+
+        vlines!(
+            ax, [0.0],
+            color = (:black, 0.5),
+            linestyle = :dash
+        )
+
+        hlines!(
+            ax, [0.0],
+            color = (:gray, 0.4),
+            linestyle = :dash
+        )
+
+        xlims!(ax, -0.1, 1.0)
+
+        if i == 1
+            axislegend(ax, position = :rt, framevisible = false)
+        end
+    end
+
+    Label(
+        fig[0, 1:3],
+        "ROAMM — Plain vs Two-step B2B ΔR (N = $(length(subjects)))",
+        fontsize = 22,
+        font = :bold
+    )
+
+    return fig
+end
+
+
+# ╔═╡ b0119c83-3d0e-42fe-a581-219939f3743e
+begin
+    fig_delta_comparison = plot_plain_vs_two_step_delta(
+        scores_plain_delta,
+        scores_two_step_delta
+    )
+
+    fig_delta_comparison
+end
+
 # ╔═╡ Cell order:
 # ╠═e9ce96e4-ca36-11f1-84a8-df0069b540ab
 # ╠═4f8ae38b-5aff-4ab5-b546-9b1e88c1dc85
@@ -1824,3 +2426,18 @@ end
 # ╠═8cfdac79-78da-40c9-9e5d-4ae43bb0cb18
 # ╠═f8aa3617-9110-4d71-bbeb-ee58101f73bf
 # ╠═28f461e7-4e8c-472a-accc-1afb6cf8d95a
+# ╠═f00cbae8-7d08-4e6a-bcdb-22485c8f6800
+# ╠═2315921f-d530-4e1e-ae3e-dfb42b6d485f
+# ╠═fdf9adf2-fbd0-422f-a5f6-5c06fae2698f
+# ╠═d53395fa-be79-48bf-bb5c-d751c85837ff
+# ╠═563bc873-83ce-4bf9-b535-c394999474cf
+# ╠═a0c020bc-b3d0-4526-b566-463aee2266ea
+# ╠═6d2a9f0c-9375-4d32-9200-f51e6b8d6a3e
+# ╠═b28e292f-e688-4db7-b30b-1a0e33fc2501
+# ╠═f43162ae-f581-4c75-9207-747f314a6900
+# ╠═3e4d7940-1e6f-4f7d-848a-29e6d88e8114
+# ╠═7817d72b-58f5-4365-be29-ef49e3bde67d
+# ╟─67cb4228-0554-4b69-903c-09e31f02d3e0
+# ╠═9cf05984-19f2-4aa2-8822-81a64d5933e4
+# ╠═5919eb8c-0a87-486a-9227-0db91428a542
+# ╠═b0119c83-3d0e-42fe-a581-219939f3743e
