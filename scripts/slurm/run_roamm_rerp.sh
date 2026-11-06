@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=roamm_rerp
+#SBATCH --job-name=roamm_rerp_rms_inner5
 #SBATCH --account=st
 #SBATCH --partition=cpu
 #SBATCH --nodes=1
