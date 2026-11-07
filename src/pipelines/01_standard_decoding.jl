@@ -9,29 +9,28 @@ MLJ.machine(
     kwargs...,
 )
 
-function make_ridge_tuned_model(;
-    inner_nfolds::Int = 3, 
-    resolution::Int = 20
-)
-    ridge_model = RidgeRegressor()
-
-    lambda_range = range(
-        ridge_model,
-        :lambda;
-        lower = 1e-6,
-        upper = 1e2,
-        scale = :log
-    )
-
-    return TunedModel(
-        model = ridge_model,
-        resampling = CV(nfolds = inner_nfolds),
-        tuning = Grid(resolution = resolution),
-        range = lambda_range,
-        measure = RSquared()
-    )
-end
-
+#function make_ridge_tuned_model(;
+#    inner_nfolds::Int = 3, 
+#    resolution::Int = 20
+#)
+#    ridge_model = RidgeRegressor()
+#
+#    lambda_range = range(
+#        ridge_model,
+#        :lambda;
+#        lower = 1e-6,
+#        upper = 1e2,
+#        scale = :log
+#    )
+#
+#    return TunedModel(
+#        model = ridge_model,
+#        resampling = CV(nfolds = inner_nfolds),
+#        tuning = Grid(resolution = resolution),
+#        range = lambda_range,
+#        measure = RSquared()
+#    )
+#end
 
 function decode_standard_ridge(
     dat,
@@ -174,7 +173,12 @@ end
 function run_standard_decoding(
     cfg::ConditionContinuousConfig,
     simulation;
-    model = make_ridge_tuned_model(),
+    model = UnfoldDecode.tunemodel(
+        RidgeRegressor();
+        nfolds = 5,
+        resolution = 10,
+        measure = MLJ.rms
+    ),
     target::Symbol = :continuous,
     nfolds::Int = 3,
     seed::Int = 12
@@ -192,7 +196,12 @@ end
 function run_standard_decoding(
     cfg::CorrelatedContinuousConfig,
     simulation;
-    model = make_ridge_tuned_model(),
+    model = UnfoldDecode.tunemodel(
+        RidgeRegressor();
+        nfolds = 5,
+        resolution = 10,
+        measure = MLJ.rms
+    ),
     targets = (
         :continuous1,
         :continuous2,
