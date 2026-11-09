@@ -83,7 +83,12 @@ end
 function run_rerp_decoding(
     cfg::ConditionContinuousConfig,
     simulation;
-    model = make_ridge_tuned_model(),
+    model = UnfoldDecode.tunemodel(
+        RidgeRegressor(fit_intercept = true);
+        nfolds = 5,
+        resolution = 10,
+        measure = MLJ.rms
+    ),
     target::Symbol = :continuous,
     nfolds::Int = 3
 )
@@ -103,7 +108,12 @@ end
 function run_rerp_decoding(
     cfg::CorrelatedContinuousConfig,
     simulation;
-    model = make_ridge_tuned_model(),
+    model = UnfoldDecode.tunemodel(
+        RidgeRegressor(fit_intercept = true);
+        nfolds = 5,
+        resolution = 10,
+        measure = MLJ.rms
+    ),
     targets = (
         :continuous1,
         :continuous2,

@@ -3,7 +3,7 @@ function fit_rerp_decoding_roamm(
     evts;
     # model = make_ridge_tuned_model(),
     model = UnfoldDecode.tunemodel(
-        RidgeRegressor(fit_intercept = false);
+        RidgeRegressor(fit_intercept = true);
         nfolds = 5,
         resolution = 10,
         measure = MLJ.rms
