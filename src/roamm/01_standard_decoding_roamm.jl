@@ -2,7 +2,12 @@ function fit_standard_decoding_roamm(
     dat,
     evts,
     times;
-    model = make_ridge_tuned_model(),
+    model = UnfoldDecode.tunemodel(
+        RidgeRegressor(fit_intercept = true);
+        nfolds = 5,
+        resolution = 10,
+        measure = MLJ.rms
+    ),
     targets = (:word_length, :frequency_zipf, :word_surprisal),
     nfolds::Int = 5, 
     seed::Int = 12,

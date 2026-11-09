@@ -174,7 +174,7 @@ function run_standard_decoding(
     cfg::ConditionContinuousConfig,
     simulation;
     model = UnfoldDecode.tunemodel(
-        RidgeRegressor();
+        RidgeRegressor(fit_intercept = true);
         nfolds = 5,
         resolution = 10,
         measure = MLJ.rms
@@ -197,7 +197,7 @@ function run_standard_decoding(
     cfg::CorrelatedContinuousConfig,
     simulation;
     model = UnfoldDecode.tunemodel(
-        RidgeRegressor();
+        RidgeRegressor(fit_intercept = true);
         nfolds = 5,
         resolution = 10,
         measure = MLJ.rms
