@@ -69,6 +69,9 @@ function _r_scores(X_test, Y_test, models)
 		# Full reconstruction
 		R[i] = cor(x_reconstructed, y_decoded)
 
+		# New: XH vs true X
+		R_XH_true[i] = cor(x_reconstructed, x_true)
+
 		# Knockout: set predictor i to zero, keep H fixed
 		X_test_ko = copy(X_test)
 		X_test_ko[:, i] .= 0
@@ -79,7 +82,8 @@ function _r_scores(X_test, Y_test, models)
 	return (
 		R = R, 
 		R_knockout = R_knockout,
-		delta_R = R .- R_knockout
+		delta_R = R .- R_knockout,
+		R_XH_true = R_XH_true
 	)
 end
 
@@ -117,11 +121,15 @@ function calculate_b2b_R(
 	)
 	
 	n_outer = length(folds)
+	fold_test_indices = [collect(test_idx) for (_, test_idx) in folds]
 
 	# fold x time x predictor
+	fold_G = Array{Float64}(undef, n_outer, n_times, n_channels, n_preds)
+	fold_H = Array{Float64}(undef, n_outer, n_times, n_preds, n_preds)
 	fold_R = fill(NaN, n_outer, n_times, n_preds)
 	fold_delta_R = fill(NaN, n_outer, n_times, n_preds)
 	fold_R_knockout = fill(NaN, n_outer, n_times, n_preds)
+	fold_R_XH_true = fill(NaN, n_outer, n_times, n_preds)
 	
 	# 2. Iterate over outer folds
 	for (fold_idx, (train_idx, test_idx)) in enumerate(folds)
@@ -143,6 +151,8 @@ function calculate_b2b_R(
 
 			# Fit models using only outer training trials
 			models = _fit_b2b(X, Y, splits)
+			fold_G[fold_idx, t, :, :] .= models.G
+			fold_H[fold_idx, t, :, :] .= models.H
 
 			# Evaluate on outer test trials
 			scores = _r_scores(
@@ -154,6 +164,7 @@ function calculate_b2b_R(
 			fold_R[fold_idx, t, :] .= scores.R
 			fold_R_knockout[fold_idx, t, :] .= scores.R_knockout
 			fold_delta_R[fold_idx, t, :] .= scores.delta_R
+			fold_R_XH_true[fold_idx, t, :] .= scores.R_XH_true
 		end
 	end
 		
@@ -175,14 +186,21 @@ function calculate_b2b_R(
 	R = mean_finite_folds(fold_R)
 	R_knockout = mean_finite_folds(fold_R_knockout)
 	delta_R = mean_finite_folds(fold_delta_R)
+	R_XH_true = mean_finite_folds(fold_R_XH_true)
 
 	return(
+		fold_G = fold_G,
+		fold_H = fold_H,
+		fold_test_indices = fold_test_indices,
 		R = R,
 		R_knockout = R_knockout,
 		delta_R = delta_R,
+		R_XH_true = R_XH_true,
+
 		fold_R = fold_R,
 		fold_R_knockout = fold_R_knockout,
 		fold_delta_R = fold_delta_R,
+		fold_R_XH_true = fold_R_XH_true,
 		times = times
 	)
 end

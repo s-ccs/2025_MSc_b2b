@@ -2,7 +2,7 @@
 
 julia_version = "1.12.3"
 manifest_format = "2.0"
-project_hash = "44fb8bded140b43ed48abd0f0fed0421c72f4852"
+project_hash = "9c0a5fdccf18063184d9c40cfdf21a6eea0f8e42"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -1767,7 +1767,7 @@ uuid = "f1f71cc9-e9ae-5b93-9b94-4fe0e1ad3748"
 version = "5.5.6+0"
 
 [[deps.MScB2B]]
-deps = ["AlgebraOfGraphics", "CSV", "CairoMakie", "CondaPkg", "DataFrames", "Debugger", "Distributions", "GLM", "LinearAlgebra", "MAT", "MLJ", "MLJLinearModels", "MLJMultivariateStatsInterface", "MultivariateStats", "NPZ", "PlutoLinks", "PlutoUI", "PythonCall", "Random", "Statistics", "StatsModels", "Unfold", "UnfoldDecode", "UnfoldMakie", "UnfoldSim"]
+deps = ["AlgebraOfGraphics", "CSV", "CairoMakie", "CondaPkg", "DataFrames", "Debugger", "Distributed", "Distributions", "GLM", "LinearAlgebra", "MAT", "MLJ", "MLJLinearModels", "MLJMultivariateStatsInterface", "MultivariateStats", "NPZ", "PlutoLinks", "PlutoUI", "PythonCall", "Random", "Statistics", "StatsModels", "Unfold", "UnfoldDecode", "UnfoldMakie", "UnfoldSim"]
 path = "."
 uuid = "7266955a-0f00-4298-a1b6-1a1e26acc74d"
 version = "0.1.0"

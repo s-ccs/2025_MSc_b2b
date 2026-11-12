@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=roamm_two_step
+#SBATCH --job-name=roamm_two_step_evaluation_G_H
 #SBATCH --account=st
 #SBATCH --partition=cpu
 #SBATCH --nodes=1
@@ -7,7 +7,10 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
 #SBATCH --time=06:00:00
-#SBATCH --output=roamm_%A_%a.out
+#SBATCH --output=slurm_results/logs/roamm/two_step_b2b_evaluation_G_H/two_step_b2b_evaluation_G_H_%A_%a.log
+#SBATCH --error=slurm_results/logs/roamm/two_step_b2b_evaluation_G_H/two_step_b2b_evaluation_G_H_%A_%a.log
+
+
 
 set -e
 
@@ -27,6 +30,6 @@ echo "Node: $(hostname)"
 echo "Started: $(date)"
 
 # Run the existing pipeline
-"$JULIA" --threads=1 --project=. scripts/roamm/run_roamm_all_subjects.jl
+"$JULIA" --threads=1 --project=. scripts/roamm/run_two_step_b2b_evaluation_threads.jl
 
 echo "Finished: $(date)"
