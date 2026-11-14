@@ -175,3 +175,142 @@ function fit_one_step_b2b_roamm(
         solver = solver
     )
 end
+
+function fit_one_step_b2b_roamm(
+    eeg,
+    evts;
+    predictos::Vector{Symbol} = [:word_length, :frequency_zipf, :word_surprisal],
+    sfreq::Float64 = 256.0,
+    cross_val_reps::Int = 5,
+    scaling::Symbol = :center
+) 
+
+    evts = copy(evts)
+    sort!(evts, :latency)
+
+    # Unfold event type
+    evts[!, :event] = fill("fixation", nrow(evts))
+
+    # Same perdictor preprocessing as two-step B2B
+    model_predictors = _prepare_predictors!(evts, predictos; scaling = scaling)
+
+    formula_b2b = _make_formula(model_predictors)
+
+    design = [
+        "fixation" => (
+            formula_b2b,
+            Unfold.firbasis(
+                τ = [-0.1, 1.0],
+                sfreq = sfreq
+            ))]
+
+    solver = (X, y) -> UnfoldDecode.solver_b2b(
+        X,
+        y;
+        cross_val_reps = cross_val_reps,
+        multithreading = false,
+        show_progress = false,
+        solver_G = UnfoldDecode.model_ridge,
+        solver_H = UnfoldDecode.model_ridge
+    )
+
+    t0 = time()
+
+    uf_b2b = Unfold.fit(
+        UnfoldDecode.UnfoldModel,
+        design,
+        evts,
+        eeg;
+        solver = solver,
+        eventcolumn = :event
+    )
+
+    println("One-step B2B time: ", round(time() - t0; digits=2), " s")
+
+    return(
+        predictors = predictos,
+        model_predictors = model_predictors,
+        fitted_model = uf_b2b
+    )
+end
+
+function calculate_one_step_b2b_R(
+    X_fir,
+    eeg;
+    nfolds::Int = 5,
+    cross_val_reps::Int = 5,
+    sfreq::Float64 = 256.0,
+    seed::Int = 12
+)
+    # X_fir: samples x FIR-expanded predictors
+    # eeg: channels x samples
+
+    X = Matrix{Float64}(X_fir)
+    Y = Matrix{Float64}(permutedims(eeg))
+
+    n_samples, n_predictors = size(X)
+
+    # Outer CV: contiguous blocks
+    edges = round.(Int, range(0, n_samples; length = nfolds + 1))
+
+    fold_R = fill(NaN, nfolds, n_predictors)
+    fold_R_knockout = fill(NaN, nfolds, n_predictors)
+    fold_delta_R = fill(NaN, nfolds, n_predictors)
+    fold_R_XH_true = fill(NaN, nfolds, n_predictors)
+
+    for fold_idx in 1:nfolds
+        println("Outer fold $fold_idx / $nfolds")  
+        
+        test_start = edges[fold_idx] + 1
+        test_end = edges[fold_idx + 1]
+        test_idx = collect(test_start:test_end)
+
+        train_idx = [
+            collect(1:test_start - 1);
+            collect(test_end + 1:n_samples)
+        ]
+
+        X_train = X[train_idx, :]  
+        Y_train = Y[train_idx, :]
+
+        splits = _make_internal_splits(
+            1:length(train_idx);
+            cross_val_reps = cross_val_reps,
+            seed = seed + 1000 * fold_idx
+        )
+
+        models = _fit_b2b(X_train, Y_train, splits)
+
+        # Evaluate  on held-out samples
+        scores = _r_scores(
+            X[test_idx, :],
+            Y[test_idx, :],
+            models
+        )
+
+        fold_R[fold_idx, :] .= scores.R
+        fold_R_knockout[fold_idx, :] .= scores.R_knockout
+        fold_delta_R[fold_idx, :] .= scores.delta_R
+        fold_R_XH_true[fold_idx, :] .= scores.R_XH_true
+    end
+
+    function mean_finite(scores)
+        return[
+            let vals = filter(isfinite, scores[;, i])
+                isempty(vals) ? NaN : mean(vals)
+            end
+            for i in 1:n_predictors
+        ]
+    end
+
+    return(
+        R = mean_finite(fold_R),
+        R_knockout = mean_finite(fold_R_knockout),
+        delta_R = mean_finite(fold_delta_R),
+        R_XH_true = mean_finite(fold_R_XH_true),
+        fold_R = fold_R,
+        fold_R_knockout = fold_R_knockout,
+        fold_delta_R = fold_delta_R,
+        fold_R_XH_true = fold_R_XH_true
+    )
+end
