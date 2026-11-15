@@ -18,7 +18,7 @@ events_path = "/home/st/st_us-051900/st_st181570/data/ROAMM/outputs/preprocessin
 #events_path = "/scratch/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
 
 PROJECT_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm", "plain_b2b")
+models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm_expand_time_window", "plain_b2b_expand_time_window")
 mkpath(models_dir)
 
 
@@ -35,7 +35,7 @@ subjects = [subjects[task_id]]
 
 
 for subject in subjects
-    result_path = joinpath(models_dir, "$(subject)_$(SCALING)_roamm_plain_b2b.jls")
+    result_path = joinpath(models_dir, "$(subject)_$(SCALING)_roamm_plain_b2b_expand_time_window.jls")
     isfile(result_path) && (println("SKIPPED: $subject"); continue)
 
 
@@ -48,7 +48,7 @@ for subject in subjects
     evts[!, :event] = fill("fixation", nrow(evts))
 
     # prepare epochs
-    dat_epoched, evts_epoched, times = MScB2B.prepare_roamm_epochs(eeg, evts)
+    dat_epoched, evts_epoched, times = MScB2B.prepare_roamm_epochs(eeg, evts; epoch_window = (-0.5, 1.0))
     println("EEG size: $(size(eeg)) | Epochs: $(nrow(evts_epoched))")
 
     result = MScB2B.fit_plain_b2b_roamm(

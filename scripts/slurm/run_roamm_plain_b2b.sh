@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=roamm_plain_b2b
+#SBATCH --job-name=roamm_plain_b2b_extended
 #SBATCH --account=st
 #SBATCH --partition=cpu
 #SBATCH --nodes=1
@@ -7,7 +7,8 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
 #SBATCH --time=12:00:00
-#SBATCH --output=roamm_plain_b2b_%A_%a.out
+#SBATCH --output=slurm_results/logs/roamm_expand_time_window/plain_b2b_expand_time_window/plain_b2b_%A_%a.out
+#SBATCH --error=slurm_results/logs/roamm_expand_time_window/plain_b2b_expand_time_window/plain_b2b_%A_%a.err
 
 set -e
 
