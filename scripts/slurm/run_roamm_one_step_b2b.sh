@@ -5,8 +5,8 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=128G
-#SBATCH --time=48:00:00
+#SBATCH --mem=256G
+#SBATCH --time=72:00:00
 #SBATCH --output=slurm_results/logs/roamm/one_step_b2b/%A_%a.out
 #SBATCH --error=slurm_results/logs/roamm/one_step_b2b/%A_%a.err
 
@@ -30,4 +30,6 @@ echo "Started: $(date)"
 # Run the existing pipeline
 "$JULIA" --threads=1 --project=. scripts/different_pipelines_on_roamm/04_one_step_b2b_roamm_slurm.jl
 
-echo "Finished: $(date)"
+echo "Finished: $(date)" 
+
+# sbatch --array=1 --cpus-per-task=8 scripts/slurm/run_roamm_one_step_b2b.sh
