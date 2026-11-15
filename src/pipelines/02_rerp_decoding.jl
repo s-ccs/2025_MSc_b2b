@@ -154,7 +154,7 @@ function fit_rerp_decoding_roamm(
     design = [
         "fixation" => (
             _make_formula(model_predictors),
-            Unfold.firbasis(τ = [-0.1, 1.0], sfreq = sfreq)
+            Unfold.firbasis(τ = [-0.5, 1.0], sfreq = sfreq)
         )
     ]
 

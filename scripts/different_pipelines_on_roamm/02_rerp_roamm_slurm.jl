@@ -21,7 +21,7 @@ events_path = "/home/st/st_us-051900/st_st181570/data/ROAMM/outputs/preprocessin
 #events_path = "/scratch/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
 
 PROJECT_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm", "rerp_rms_inner5_fit_intercept")
+models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm_expand_time_window", "rerp_expand_time_window")
 mkpath(models_dir)
 
 PREDICTORS = [:word_length, :frequency_zipf, :word_surprisal]
@@ -37,7 +37,7 @@ task_id = parse(Int, ENV["SLURM_ARRAY_TASK_ID"])
 subjects = [subjects[task_id]]
 
 for subject in subjects
-    result_path = joinpath(models_dir, "$(subject)_$(SCALING)_roamm_rerp_decoding_rms_inner5_fit_intercept.jls")
+    result_path = joinpath(models_dir, "$(subject)_$(SCALING)_roamm_rerp_expand_time_window.jls")
     isfile(result_path) && (println("SKIPPED: $subject"); continue)
 
     t0 = time()

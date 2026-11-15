@@ -7,8 +7,8 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=128G
 #SBATCH --time=36:00:00
-#SBATCH --output=slurm_results/logs/roamm/rerp_rms_inner5/roamm_rerp_%A_%a.log
-#SBATCH --error=slurm_results/logs/roamm/rerp_rms_inner5/roamm_rerp_%A_%a.log
+#SBATCH --output=slurm_results/logs/roamm_expand_time_window/rerp_expand_time_window/roamm_rerp_%A_%a.out
+#SBATCH --error=slurm_results/logs/roamm_expand_time_window/rerp_expand_time_window/roamm_rerp_%A_%a.err
 
 set -e
 
