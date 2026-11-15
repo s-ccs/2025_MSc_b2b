@@ -1,6 +1,6 @@
 function UnfoldDecode.solver_b2b(                     # when T is a number,
-    X, # design matrix
-    data::AbstractArray{T,2}; 
+    X, # design matrix, samples x FIR features
+    data::AbstractArray{T,2}; # Continuous EEG: channels x samples
     cross_val_reps = 10,
     multithreading = true,
     show_progress = true,
@@ -61,7 +61,7 @@ function _fit_one_step_b2b_case(
                 τ = [-0.1, 1.0],
                 sfreq = cfg.sfreq
             ))]
-    solver_b2b = (X, y) -> UnfoldDecode.solver_b2b(X, y; cross_val_reps = cross_val_reps,)
+    solver_b2b = (X, y) -> UnfoldDecode.solver_b2b(X, y; cross_val_reps = cross_val_reps, multithreading = false)
     return Unfold.fit(
         UnfoldDecode.UnfoldModel,
         design_one_step_b2b,
@@ -152,34 +152,12 @@ function run_one_step_b2b(
     )
 end
 
-function fit_one_step_b2b_roamm(
-    eeg,
-    evts;
-    cross_val_reps::Int = 5
-)
 
-    formula_b2b = @formula(0 ~ 1 + word_length + frequency_zipf + word_surprisal)
-    design = [
-        "fixation" => (
-            formula_b2b,
-            Unfold.firbasis(
-                τ = [-0.1, 1.0],
-                sfreq = 256.0
-            ))]
-    solver = (X, y) -> UnfoldDecode.solver_b2b(X, y; cross_val_reps = cross_val_reps, multithreading = false, show_progress = false)
-    return Unfold.fit(
-        UnfoldDecode.UnfoldModel,
-        design,
-        evts,
-        eeg;
-        solver = solver
-    )
-end
 
 function fit_one_step_b2b_roamm(
     eeg,
     evts;
-    predictos::Vector{Symbol} = [:word_length, :frequency_zipf, :word_surprisal],
+    predictors::Vector{Symbol} = [:word_length, :frequency_zipf, :word_surprisal],
     sfreq::Float64 = 256.0,
     cross_val_reps::Int = 5,
     scaling::Symbol = :center
@@ -192,7 +170,7 @@ function fit_one_step_b2b_roamm(
     evts[!, :event] = fill("fixation", nrow(evts))
 
     # Same perdictor preprocessing as two-step B2B
-    model_predictors = _prepare_predictors!(evts, predictos; scaling = scaling)
+    model_predictors = _prepare_predictors!(evts, predictors; scaling = scaling)
 
     formula_b2b = _make_formula(model_predictors)
 
@@ -225,10 +203,10 @@ function fit_one_step_b2b_roamm(
         eventcolumn = :event
     )
 
-    println("One-step B2B time: ", round(time() - t0; digits=2), " s")
+    println("One-step B2B time: ", round(time() - t0 / 60; digits=2), "min")
 
     return(
-        predictors = predictos,
+        predictors = predictors,
         model_predictors = model_predictors,
         fitted_model = uf_b2b
     )
@@ -237,9 +215,9 @@ end
 function calculate_one_step_b2b_R(
     X_fir,
     eeg;
+    feature_indices, # FIR columns to evaluate, excluding intercept columns
     nfolds::Int = 5,
     cross_val_reps::Int = 5,
-    sfreq::Float64 = 256.0,
     seed::Int = 12
 )
     # X_fir: samples x FIR-expanded predictors
@@ -248,15 +226,15 @@ function calculate_one_step_b2b_R(
     X = Matrix{Float64}(X_fir)
     Y = Matrix{Float64}(permutedims(eeg))
 
-    n_samples, n_predictors = size(X)
+    n_samples, n_features = size(X)
 
-    # Outer CV: contiguous blocks
+    # Outer CV: divide samples into consecutive blocks of approximately equal size
     edges = round.(Int, range(0, n_samples; length = nfolds + 1))
 
-    fold_R = fill(NaN, nfolds, n_predictors)
-    fold_R_knockout = fill(NaN, nfolds, n_predictors)
-    fold_delta_R = fill(NaN, nfolds, n_predictors)
-    fold_R_XH_true = fill(NaN, nfolds, n_predictors)
+    fold_R = fill(NaN, nfolds, n_features)
+    fold_R_knockout = fill(NaN, nfolds, n_features)
+    fold_delta_R = fill(NaN, nfolds, n_features)
+    fold_R_XH_true = fill(NaN, nfolds, n_features)
 
     for fold_idx in 1:nfolds
         println("Outer fold $fold_idx / $nfolds")  
@@ -285,7 +263,8 @@ function calculate_one_step_b2b_R(
         scores = _r_scores(
             X[test_idx, :],
             Y[test_idx, :],
-            models
+            models;
+            feature_indices = feature_indices
         )
 
         fold_R[fold_idx, :] .= scores.R
@@ -296,10 +275,10 @@ function calculate_one_step_b2b_R(
 
     function mean_finite(scores)
         return[
-            let vals = filter(isfinite, scores[;, i])
+            let vals = filter(isfinite, scores[:, i])
                 isempty(vals) ? NaN : mean(vals)
             end
-            for i in 1:n_predictors
+            for i in 1:n_features
         ]
     end
 

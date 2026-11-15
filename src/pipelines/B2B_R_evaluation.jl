@@ -51,7 +51,7 @@ function _fit_b2b(X, Y, internal_splits)
 	)
 end
 
-function _r_scores(X_test, Y_test, models)
+function _r_scores(X_test, Y_test, models; feature_indices = 2:size(X_test, 2))
 	n_preds = size(X_test, 2)
 
 	R = fill(NaN, n_preds)
@@ -61,7 +61,7 @@ function _r_scores(X_test, Y_test, models)
 	YG = Y_test * models.G
 	XH = X_test * models.H
 	
-	for i in 2:n_preds
+	for i in feature_indices
 		y_decoded = YG[:, i]
 		x_reconstructed = XH[:, i]
 		x_true = X_test[:, i]
@@ -73,10 +73,10 @@ function _r_scores(X_test, Y_test, models)
 		R_XH_true[i] = cor(x_reconstructed, x_true)
 
 		# Knockout: set predictor i to zero, keep H fixed
-		X_test_ko = copy(X_test)
-		X_test_ko[:, i] .= 0
+		# X_test_ko = copy(X_test)
+		# X_test_ko[:, i] .= 0
 
-		x_reconstructed_ko = (X_test_ko * models.H)[:, i]
+		x_reconstructed_ko = XH[:, i] .- X_test[:, i] .* models.H[i, i]
 		R_knockout[i] = cor(x_reconstructed_ko, y_decoded)
 	end
 	return (

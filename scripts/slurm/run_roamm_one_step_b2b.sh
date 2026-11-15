@@ -4,10 +4,11 @@
 #SBATCH --partition=cpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=32G
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=128G
 #SBATCH --time=48:00:00
-#SBATCH --output=roamm_one_step_b2b_%A_%a.out
+#SBATCH --output=slurm_results/logs/roamm/one_step_b2b/%A_%a.out
+#SBATCH --error=slurm_results/logs/roamm/one_step_b2b/%A_%a.err
 
 set -e
 
@@ -15,7 +16,7 @@ set -e
 cd "$SLURM_SUBMIT_DIR"
 
 # Avoid CPU oversubscription
-export OPENBLAS_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=8
 export OMP_NUM_THREADS=1
 
 # julia 1.12.3
