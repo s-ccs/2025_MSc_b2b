@@ -174,7 +174,7 @@ function fit_two_step_b2b_roamm(
 		"stimulus" => (
 			formula,
 			Unfold.firbasis(
-				τ = [-0.1, 1.0],
+				τ = [-0.5, 1.0],
 				sfreq = sfreq
 			))]
 	
@@ -275,7 +275,7 @@ function predictive_evaluate_two_step_b2b_roamm(
 		"stimulus" => (
 			formula,
 			Unfold.firbasis(
-				τ = [-0.1, 1.0],
+				τ = [-0.5, 1.0],
 				sfreq = sfreq
 			))]
 

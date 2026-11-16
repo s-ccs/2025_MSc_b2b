@@ -18,14 +18,13 @@ eeg_dir = "/scratch/data/ROAMM/outputs/eeg"
 events_path = "/scratch/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
 
 PROJECT_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm", "standard_decoding")
-logs_dir = joinpath(PROJECT_ROOT, "slurm_results", "logs", "roamm", "standard_decoding")
+models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm_expand_time_window", "standard_decoding_expand_time_window")
+logs_dir = joinpath(PROJECT_ROOT, "slurm_results", "logs", "roamm_expand_time_window", "standard_decoding_expand_time_window")
 
 mkpath(models_dir)
 mkpath(logs_dir)
 
 PREDICTORS = [:word_length, :frequency_zipf, :word_surprisal]
-INNER_NFOLDS = 3
 OUTER_NFOLDS = 5
 RESOLUTION = 10
 SEED = 12 
@@ -35,16 +34,16 @@ SCALING = :center
 all_events = CSV.read(events_path, DataFrame)
 subjects = sort(unique(all_events.subject_id))
 
-log_path = joinpath(logs_dir, "standard_ridge_decoding.log")
+log_path = joinpath(logs_dir, "standard_decoding_expand_time_window.log")
 log_lock = ReentrantLock()
 open(log_path, "a") do log
     logmsg(msg) = lock(() -> (println(log, msg); flush(log)), log_lock)
     logmsg("Started: $(now()) | Subjects: $(length(subjects)) | Threads: $(Threads.nthreads())")
-    logmsg("Inner folds: $INNER_NFOLDS | Outer folds: $OUTER_NFOLDS | Resolution: $RESOLUTION | Seed: $SEED")
+    logmsg("Outer folds: $OUTER_NFOLDS | Resolution: $RESOLUTION | Seed: $SEED")
 
     Threads.@threads for i in eachindex(subjects)
         subject = subjects[i]
-        result_path = joinpath(models_dir, "$(subject)_$(SCALING)_standard_ridge_decoding.jls")
+        result_path = joinpath(models_dir, "$(subject)_$(SCALING)_standard_ridge_decoding_expand_time_window.jls")
         if isfile(result_path)
             logmsg("SKIPPED: $subject")
             continue
@@ -58,19 +57,18 @@ open(log_path, "a") do log
             eeg, evts = MScB2B.concatenate_runs(subject, all_events; eeg_dir = eeg_dir)
 
             # 2. Extract fixation-locked epochs
-            dat_epoched, events_epoched, times = MScB2B.prepare_roamm_epochs(eeg, evts; sfreq = SFREQ)
+            dat_epoched, events_epoched, times = MScB2B.prepare_roamm_epochs(eeg, evts; sfreq = SFREQ, epoch_window = (-0.5, 1.0))
             @assert size(dat_epoched, 3) == nrow(events_epoched)
             @assert size(dat_epoched, 2) == length(times)
  
             # 3. Tuned ridge model
-            model = MScB2B.make_ridge_tuned_model(inner_nfolds = INNER_NFOLDS, resolution = RESOLUTION)
+            #model = MScB2B.make_ridge_tuned_model(inner_nfolds = INNER_NFOLDS, resolution = RESOLUTION)
 
             # Decode each predictor
             result = MScB2B.fit_standard_decoding_roamm(
                 dat_epoched,
                 events_epoched,
                 times;
-                model = model,
                 targets = PREDICTORS,
                 nfolds = OUTER_NFOLDS,
                 seed = SEED,
@@ -84,7 +82,6 @@ open(log_path, "a") do log
                 subject = subject,
                 predictors = PREDICTORS,
                 scaling = SCALING,
-                inner_nfolds = INNER_NFOLDS,
                 outer_nfolds = OUTER_NFOLDS,
                 scores = result.scores
             ))

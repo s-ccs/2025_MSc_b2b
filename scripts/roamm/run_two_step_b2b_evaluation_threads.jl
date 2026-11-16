@@ -14,13 +14,13 @@ LinearAlgebra.BLAS.set_num_threads(1)
 
 # Configuration
 eeg_dir = "/home/st/st_us-051900/st_st181570/data/ROAMM/outputs/eeg"
-events_path = "/home/st/st_us-051900/st_st181570/data/ROAMM/outputs/preprocessing 05_roamm_b2b_events.csv"
+events_path = "/home/st/st_us-051900/st_st181570/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
 #eeg_dir = "/scratch/data/ROAMM/outputs/eeg"
 #events_path = "/scratch/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
 
 PROJECT_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm", "two_step_b2b_evaluation_G_H")
-logs_dir = joinpath(PROJECT_ROOT, "slurm_results", "logs", "roamm", "two_step_b2b_evaluation_G_H")
+models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm_expand_time_window", "two_step_b2b_evaluation_expand_time_window")
+logs_dir = joinpath(PROJECT_ROOT, "slurm_results", "logs", "roamm_expand_time_window", "two_step_b2b_evaluation_expand_time_window")
 mkpath(models_dir)
 mkpath(logs_dir)
 
@@ -40,7 +40,7 @@ subjects = [subjects[task_id]]
 
 
 for subject in subjects
-    result_path = joinpath(models_dir, "$(subject)_$(SCALING)_two_step_b2b_evaluation_G_H.jls")
+    result_path = joinpath(models_dir, "$(subject)_$(SCALING)_two_step_b2b_evaluation_expand_time_window.jls")
     isfile(result_path) && (println("SKIPPED: $subject"); continue)
 
 
@@ -80,7 +80,7 @@ for subject in subjects
     
 
     mv(temp_path, result_path; force = true)
-    elapsed = round(time() - t0 / 60; digits = 2)
+    elapsed = round((time() - t0) / 60; digits = 2)
     println("SUCCESS: $subject | Time: $(elapsed) min")
 end 
 println("Finished: $(now())")

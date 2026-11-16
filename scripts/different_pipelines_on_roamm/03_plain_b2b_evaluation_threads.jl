@@ -19,8 +19,8 @@ eeg_dir = "/scratch/data/ROAMM/outputs/eeg"
 events_path = "/scratch/data/ROAMM/outputs/preprocessing/05_roamm_b2b_events.csv"
 
 PROJECT_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
-models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm", "plain_b2b_evaluation")
-logs_dir = joinpath(PROJECT_ROOT, "slurm_results", "logs", "roamm", "plain_b2b_evaluation")
+models_dir = joinpath(PROJECT_ROOT, "slurm_results", "models", "roamm_expand_time_window", "plain_b2b_evaluation_extended")
+logs_dir = joinpath(PROJECT_ROOT, "slurm_results", "logs", "roamm_expand_time_window", "plain_b2b_evaluation_extended")
 mkpath(models_dir)
 mkpath(logs_dir)
 
@@ -34,7 +34,7 @@ SEED = 12
 all_events = CSV.read(events_path, DataFrame)
 subjects = sort(unique(all_events.subject_id))
 
-log_path = joinpath(logs_dir, "plain_b2b_evaluation.log")
+log_path = joinpath(logs_dir, "plain_b2b_evaluation_expand_time_window.log")
 log_lock = ReentrantLock()
 open(log_path, "a") do log
     logmsg(msg) = lock(() -> (println(log, msg); flush(log)), log_lock)
@@ -43,7 +43,7 @@ open(log_path, "a") do log
 
     Threads.@threads for i in eachindex(subjects)
         subject = subjects[i]
-        result_path = joinpath(models_dir, "$(subject)_$(SCALING)_roamm_plain_b2b_evaluation.jls")
+        result_path = joinpath(models_dir, "$(subject)_$(SCALING)_roamm_plain_b2b_evaluation_expand_time_window.jls")
         if isfile(result_path)
             logmsg("SKIPPED: $subject")
             continue
@@ -58,7 +58,7 @@ open(log_path, "a") do log
             evts[!, :event] = fill("fixation", nrow(evts))
 
             # 2. Extract fixation-locked epochs
-            dat_epoched, evts_epoched, times = MScB2B.prepare_roamm_epochs(eeg, evts)
+            dat_epoched, evts_epoched, times = MScB2B.prepare_roamm_epochs(eeg, evts; epoch_window = (-0.5, 1.0))
             logmsg("DATA: $subject | Epochs: $(nrow(evts_epoched)) | EEG size: $(size(dat_epoched))")
 
 
