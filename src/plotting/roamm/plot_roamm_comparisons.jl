@@ -26,7 +26,8 @@ function plot_standard_vs_rerp(
         # Mean across subjects
         combine(
             groupby(subject_mean, [:target, :time]),
-            :r => mean => :winsor20
+            #:r => (x -> winsorized_mean(x; proportion=0.2)) => :winsor20
+            :r => mean => :r_mean
         )
     end
 
@@ -61,14 +62,14 @@ function plot_standard_vs_rerp(
         )
 
         lines!(
-            ax, std.time, std.winsor20;
+            ax, std.time, std.r_mean;
             color = "#0072B2",
             linewidth = 3,
             label = "Standard decoding"
         )
 
         lines!(
-            ax, rer.time, rer.winsor20;
+            ax, rer.time, rer.r_mean;
             color = "#D55E00",
             linewidth = 3,
             label = "rERP decoding"
@@ -94,6 +95,7 @@ function plot_standard_vs_rerp(
 
     return fig
 end
+
 
 function plot_plain_vs_two_step_b2b(
     scores_plain,
@@ -132,7 +134,8 @@ function plot_plain_vs_two_step_b2b(
         # Mean across subjects
         combine(
             groupby(subject_mean, [:coefname, :time]),
-            :estimate => mean => :estimate_mean
+            #:estimate => mean => :estimate_mean
+            :estimate => (x -> winsorized_mean(x; proportion=0.2)) => :estimate_winsor20
         )
     end
 
@@ -167,14 +170,14 @@ function plot_plain_vs_two_step_b2b(
         )
 
         lines!(
-            ax, plain.time, plain.estimate_mean;
+            ax, plain.time, plain.estimate_winsor20;
             color = "#0072B2",
             linewidth = 3,
             label = "Plain B2B"
         )
 
         lines!(
-            ax, two.time, two.estimate_mean;
+            ax, two.time, two.estimate_winsor20;
             color = "#D55E00",
             linewidth = 3,
             label = "Two-step B2B"
@@ -191,7 +194,7 @@ function plot_plain_vs_two_step_b2b(
 
     Label(
         fig[0, 1:3],
-        "ROAMM — Plain vs Two-step B2B (N = $(length(subjects)))",
+        "ROAMM — Plain vs Two-step B2B (20% winsorized mean, N = $(length(subjects)))",
         fontsize = 22,
         font = :bold
     )

@@ -7,6 +7,7 @@ function plot_roamm_decoding(scores_all, scores_summary;
     n_subjects = length(unique(scores_all.subject))
     fig = Figure(size = (1500, 460))
 
+    axes = Axis[]
     for (i, target) in enumerate(targets)
 
         ax = Axis(
@@ -14,12 +15,13 @@ function plot_roamm_decoding(scores_all, scores_summary;
             title = titles[i],
             xlabel = "Time relative to fixation onset (s)",
             ylabel = i == 1 ? "Correlation (r)" : "",
-            xticks = -0.1:0.1:1.0,
+            xticks = -0.5:0.25:1.0,
             topspinevisible = false,
             rightspinevisible = false,
             xgridvisible = false,
             ygridvisible = false
         )
+        push!(axes, ax)
 
         sub = scores_all[scores_all.target .== target, :]
 
@@ -42,7 +44,7 @@ function plot_roamm_decoding(scores_all, scores_summary;
             :time
         )
 
-        # 10% winsorized mean
+        # 20% winsorized mean
         lines!(
             ax,
             sm.time,
@@ -77,18 +79,20 @@ function plot_roamm_decoding(scores_all, scores_summary;
             linewidth = 1
         )
 
-        xlims!(ax, -0.1, 1.0)
+        xlims!(ax, -0.5, 1.0)
     end
+    linkyaxes!(axes...)
 
     Label(
         fig[0, 1:3],
-        "$title (N = $n_subjects)",
+        "$title (20% winsorized mean, N = $n_subjects)",
         fontsize = 22,
         font = :bold
     )
 
     return fig
 end
+
 
 function plot_roamm_decoding_log(
     scores_all,

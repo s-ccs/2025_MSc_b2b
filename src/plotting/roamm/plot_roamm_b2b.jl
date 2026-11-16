@@ -5,9 +5,9 @@ function plot_roamm_b2b(
 )
 
     targets = [
-        "word_length",
-        "frequency_zipf",
-        "word_surprisal"
+        "word_length_c",
+        "frequency_zipf_c",
+        "word_surprisal_c"
     ]
 
 
@@ -67,11 +67,11 @@ function plot_roamm_b2b(
             )
         end
 
-        # 10% winsorized mean
+        # 20% winsorized mean
         lines!(
             ax,
             sm.time,
-            sm.winsor20,
+            sm.estimate_mean,
             color = "#246B9A",
             linewidth = 3
         )
