@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=roamm_two_step_evaluation_G_H
+#SBATCH --job-name=roamm_two_step_evaluation_expand_window
 #SBATCH --account=st
 #SBATCH --partition=cpu
 #SBATCH --nodes=1
@@ -7,8 +7,8 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
 #SBATCH --time=06:00:00
-#SBATCH --output=slurm_results/logs/roamm/two_step_b2b_evaluation_G_H/two_step_b2b_evaluation_G_H_%A_%a.log
-#SBATCH --error=slurm_results/logs/roamm/two_step_b2b_evaluation_G_H/two_step_b2b_evaluation_G_H_%A_%a.log
+#SBATCH --output=slurm_results/logs/roamm_expand_time_window/two_step_b2b_expand_time_window/two_step_b2b_expand_time_window_%A_%a.log
+#SBATCH --error=slurm_results/logs/roamm_expand_time_window/two_step_b2b_expand_time_window_/two_step_b2b_expand_time_window_%A_%a.log
 
 
 
@@ -30,6 +30,6 @@ echo "Node: $(hostname)"
 echo "Started: $(date)"
 
 # Run the existing pipeline
-"$JULIA" --threads=1 --project=. scripts/roamm/run_two_step_b2b_evaluation_threads.jl
+"$JULIA" --threads=1 --project=. scripts/roamm/run_roamm_all_subjects_slurm.jl
 
 echo "Finished: $(date)"
